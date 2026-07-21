@@ -581,7 +581,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v4.9</span>
+          <span class="version">v5.0</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -753,8 +753,19 @@
         <div class="eyebrow">PDF APPROVAL STAMP</div>
         <h2 id="stampTitle">主管核定並蓋章</h2>
         <p class="stamp-note">
-          PDF可以選擇定位核章或直接送出；Word、Excel、圖片等其他格式可以直接送出，但無法自動核章。
+          建議直接沿用上一關版本並疊加電子章；也可以另選檔案。PDF可定位核章，其他格式可直接送出。
         </p>
+        <div class="actions">
+          <button
+            id="usePrevious"
+            type="button"
+            class="primary"
+            onclick="usePreviousFile()"
+          >
+            沿用上一版（推薦）
+          </button>
+        </div>
+        <p class="sub">或從裝置重新選擇一份檔案：</p>
         <input id="stampFile" type="file" />
         <p id="stampMsg" class="msg"></p>
         <div id="stampDirectActions" class="actions hidden">
@@ -828,7 +839,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
-        FRONT_VERSION = "4.9.0";
+        FRONT_VERSION = "5.0.0";
       let token = localStorage.getItem("workAuthToken") || "",
         data = { user: {}, cases: [], users: [] };
       if (window.pdfjsLib)
@@ -844,6 +855,7 @@
         type: "",
         label: "",
         oldUrl: "",
+        sourceLabel: "",
         renderTask: null,
       };
       window.onload = () => {
@@ -1223,6 +1235,7 @@
           type: t,
           label: label,
           oldUrl: caseFileUrl(id, t),
+          sourceLabel: "",
           renderTask: null,
         };
         document.getElementById("stampTitle").textContent =
@@ -1231,8 +1244,9 @@
         document.getElementById("stampWorkspace").classList.add("hidden");
         document.getElementById("stampDirectActions").classList.add("hidden");
         document.getElementById("directReview").disabled = false;
+        document.getElementById("usePrevious").disabled = false;
         document.getElementById("stampModal").classList.remove("hidden");
-        setMsg("stampMsg", "請選擇核定版檔案");
+        setMsg("stampMsg", "可直接載入上一關版本，不必先下載再重新上傳。");
       }
       function closeStamp() {
         document.getElementById("stampModal").classList.add("hidden");
@@ -1254,6 +1268,7 @@
           type: "",
           label: "",
           oldUrl: "",
+          sourceLabel: "",
           renderTask: null,
         };
       }
@@ -1262,68 +1277,96 @@
         .addEventListener("change", async (e) => {
           const f = e.target.files[0];
           if (!f) return;
-          document.getElementById("stampWorkspace").classList.add("hidden");
-          document.getElementById("stampDirectActions").classList.add("hidden");
-          if (f.size > 8 * 1024 * 1024) {
-            stampState.file = null;
-            stampState.bytes = null;
-            return setMsg("stampMsg", "檔案不可超過8MB", true);
-          }
-          if (stampState.pdf && stampState.pdf.destroy)
-            try {
-              stampState.pdf.destroy();
-            } catch (x) {}
-          stampState.pdf = null;
-          stampState.file = f;
-          stampState.bytes = await f.arrayBuffer();
-          document
-            .getElementById("stampDirectActions")
-            .classList.remove("hidden");
-          const isPdf = /\.pdf$/i.test(f.name) || f.type === "application/pdf";
-          if (!isPdf)
-            return setMsg(
-              "stampMsg",
-              "這個格式無法自動核章，可以使用「不核章直接送出」。",
-            );
-          if (!window.pdfjsLib || !window.PDFLib)
-            return setMsg(
-              "stampMsg",
-              "PDF核章元件未載入，但仍可使用「不核章直接送出」。",
-              true,
-            );
-          try {
-            drawStampPreview();
-          } catch (x) {
-            return setMsg(
-              "stampMsg",
-              x.message + "；仍可選擇不核章直接送出。",
-              true,
-            );
-          }
-          setMsg("stampMsg", "正在載入PDF…");
-          try {
-            stampState.pdf = await pdfjsLib.getDocument({
-              data: new Uint8Array(stampState.bytes.slice(0)),
-            }).promise;
-            stampState.pages = stampState.pdf.numPages;
-            stampState.page = stampState.pages;
-            document
-              .getElementById("stampWorkspace")
-              .classList.remove("hidden");
-            await renderStampPage();
-            setMsg(
-              "stampMsg",
-              "可拖曳印章定位後核章送出，或選擇不核章直接送出。",
-            );
-          } catch (x) {
-            document.getElementById("stampWorkspace").classList.add("hidden");
-            setMsg(
-              "stampMsg",
-              "PDF無法預覽，但仍可不核章直接送出：" + x.message,
-              true,
-            );
-          }
+          await loadReviewFile(f, "自行選擇的檔案");
         });
+      function base64ToFile(data, name, type) {
+        const raw = atob(data),
+          bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        return new File([bytes], name, {
+          type: type || "application/octet-stream",
+        });
+      }
+      async function usePreviousFile() {
+        const btn = document.getElementById("usePrevious");
+        btn.disabled = true;
+        setMsg("stampMsg", "正在載入上一關版本…");
+        try {
+          const r = await api("getPreviousFile", {
+              caseId: stampState.caseId,
+              fileType: stampState.type,
+            }),
+            f = base64ToFile(r.fileData, r.fileName, r.mimeType);
+          document.getElementById("stampFile").value = "";
+          await loadReviewFile(f, r.sourceLabel || "上一關版本");
+        } catch (x) {
+          setMsg("stampMsg", x.message, true);
+        } finally {
+          btn.disabled = false;
+        }
+      }
+      async function loadReviewFile(f, sourceLabel) {
+        document.getElementById("stampWorkspace").classList.add("hidden");
+        document.getElementById("stampDirectActions").classList.add("hidden");
+        if (f.size > 8 * 1024 * 1024) {
+          stampState.file = null;
+          stampState.bytes = null;
+          return setMsg("stampMsg", "檔案不可超過8MB", true);
+        }
+        if (stampState.pdf && stampState.pdf.destroy)
+          try {
+            stampState.pdf.destroy();
+          } catch (x) {}
+        stampState.pdf = null;
+        stampState.file = f;
+        stampState.sourceLabel = sourceLabel || "所選檔案";
+        stampState.bytes = await f.arrayBuffer();
+        document
+          .getElementById("stampDirectActions")
+          .classList.remove("hidden");
+        const isPdf = /\.pdf$/i.test(f.name) || f.type === "application/pdf";
+        if (!isPdf)
+          return setMsg(
+            "stampMsg",
+            `已載入${stampState.sourceLabel}；這個格式無法自動核章，可以直接送出。`,
+          );
+        if (!window.pdfjsLib || !window.PDFLib)
+          return setMsg(
+            "stampMsg",
+            `已載入${stampState.sourceLabel}；PDF核章元件未載入，但仍可直接送出。`,
+            true,
+          );
+        try {
+          drawStampPreview();
+        } catch (x) {
+          return setMsg(
+            "stampMsg",
+            `已載入${stampState.sourceLabel}；${x.message}；仍可直接送出。`,
+            true,
+          );
+        }
+        setMsg("stampMsg", "正在載入PDF…");
+        try {
+          stampState.pdf = await pdfjsLib.getDocument({
+            data: new Uint8Array(stampState.bytes.slice(0)),
+          }).promise;
+          stampState.pages = stampState.pdf.numPages;
+          stampState.page = stampState.pages;
+          document.getElementById("stampWorkspace").classList.remove("hidden");
+          await renderStampPage();
+          setMsg(
+            "stampMsg",
+            `已載入${stampState.sourceLabel}；可直接在這份PDF上定位疊加電子章。`,
+          );
+        } catch (x) {
+          document.getElementById("stampWorkspace").classList.add("hidden");
+          setMsg(
+            "stampMsg",
+            "PDF無法預覽，但仍可不核章直接送出：" + x.message,
+            true,
+          );
+        }
+      }
       async function renderStampPage() {
         if (!stampState.pdf) return;
         const page = await stampState.pdf.getPage(stampState.page),
