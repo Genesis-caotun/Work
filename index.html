@@ -581,7 +581,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.0</span>
+          <span class="version">v5.1</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -839,7 +839,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
-        FRONT_VERSION = "5.0.0";
+        FRONT_VERSION = "5.1.0";
       let token = localStorage.getItem("workAuthToken") || "",
         data = { user: {}, cases: [], users: [] };
       if (window.pdfjsLib)
@@ -1199,11 +1199,15 @@
         x.fillStyle = "#c8181d";
         x.textAlign = "center";
         x.textBaseline = "middle";
-        x.font = "400 190px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
-        x.fillText(n[0], 250, 145);
+        x.save();
+        x.translate(365, 250);
+        x.scale(1, 1.45);
+        x.font = "400 215px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
+        x.fillText(n[0], 0, 0);
+        x.restore();
         x.font = "400 175px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
-        x.fillText(n[1], 140, 360);
-        x.fillText(n[2], 360, 360);
+        x.fillText(n[1], 140, 145);
+        x.fillText(n[2], 140, 355);
         x.fillStyle = "#111";
         x.font = "30px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
         x.fillText("核章日期：" + date, 250, 555);
