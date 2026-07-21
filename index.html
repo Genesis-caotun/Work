@@ -1,32 +1,1724 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>創世基金會草屯院｜工作申請與結案管理平台</title><script src="https://accounts.google.com/gsi/client" async defer></script><style>
-:root{--green:#145c48;--green2:#0d4738;--sage:#dfece5;--cream:#f6f3ec;--paper:#fffdfa;--ink:#193029;--muted:#718079;--line:#dde5df;--amber:#d88b21;--red:#b33a32;--shadow:0 14px 38px rgba(24,58,47,.09)}*{box-sizing:border-box}html{background:var(--cream)}body{margin:0;background:radial-gradient(circle at 90% 0,#e3eee8 0,transparent 28rem),var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;min-height:100vh}header{background:linear-gradient(115deg,var(--green2),var(--green));color:#fff;padding:17px 22px;position:sticky;top:0;z-index:4;box-shadow:0 5px 18px rgba(13,71,56,.17)}.head{max-width:1180px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:14px}.brand{font-weight:850;font-size:19px;letter-spacing:.02em;display:flex;align-items:center}.brand:before{content:'簽';display:grid;place-items:center;width:35px;height:35px;margin-right:11px;border-radius:11px;background:#f2c46d;color:var(--green2);font-weight:900}.version{font-size:10px;opacity:.68;margin-left:8px;font-weight:600}.userbox{text-align:right;font-size:13px;color:#e7f0eb}main{max-width:1180px;margin:32px auto;padding:0 22px 50px}.card{background:rgba(255,253,250,.96);border:1px solid rgba(221,229,223,.9);border-radius:20px;padding:22px;box-shadow:var(--shadow)}.login{max-width:510px;margin:78px auto;text-align:center;padding:46px}.login:before{content:'工作流程管理';display:inline-block;padding:6px 12px;border-radius:99px;background:var(--sage);color:var(--green);font-size:12px;font-weight:800;letter-spacing:.08em}.login h1{font-size:30px;margin:18px 0 8px}.sub{color:var(--muted);line-height:1.65}.toolbar{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:20px}.eyebrow{color:var(--green);font-size:11px;letter-spacing:.15em;font-weight:900;margin-bottom:5px}.toolbar h1{font-size:30px;letter-spacing:-.03em}.toolbar-actions{display:flex;gap:9px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 20px}.stat{background:rgba(255,253,250,.84);border:1px solid var(--line);border-radius:16px;padding:15px 17px}.stat b{display:block;font-size:25px;color:var(--green2);margin-bottom:2px}.stat span{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:18px;padding:5px;background:rgba(225,235,229,.7);border-radius:14px;width:max-content;max-width:100%}.tab{background:transparent;color:var(--muted);white-space:nowrap}.tab.on{background:var(--paper);color:var(--green2);box-shadow:0 4px 13px rgba(20,92,72,.11)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}.case{position:relative;transition:transform .2s,box-shadow .2s}.case:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(24,58,47,.13)}.case.unread{border:2px solid #e2a04c}.dot{width:11px;height:11px;border-radius:50%;background:#e2a04c;position:absolute;right:18px;top:18px;box-shadow:0 0 0 5px #faedd9}.case h3{margin:0 28px 7px 0;font-size:19px}.meta{font-size:13px;color:var(--muted);line-height:1.75}.status{display:inline-flex;padding:6px 11px;border-radius:99px;background:var(--sage);color:var(--green2);font-weight:800;font-size:12px;margin:11px 0}.status.pending{background:#fff0d9;color:#925c09}.status.closed{background:#e5e9e7;color:#52605b}.files{border-top:1px solid var(--line);margin-top:8px;padding-top:9px}.file-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;font-size:13px}.missing{color:#a5aea9}.download{padding:7px 10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}button,.btn{border:0;border-radius:11px;padding:10px 14px;font-weight:750;cursor:pointer;text-decoration:none;font-size:14px;transition:filter .15s,transform .15s}button:hover,.btn:hover{filter:brightness(.97);transform:translateY(-1px)}.primary{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff}.ghost{background:var(--sage);color:var(--green2)}.warn{background:#fff1dd;color:#915807}.danger{background:#fff0ef;color:var(--red);border:1px solid #f0c8c4}.admin-label{font-size:10px;font-weight:900;color:var(--red);width:100%;letter-spacing:.13em}.form{display:grid;grid-template-columns:1.4fr 1fr auto;gap:11px}.admin-form{display:grid;grid-template-columns:1.3fr 1fr .8fr .8fr auto;gap:10px;margin:15px 0 5px}.field-note{font-size:12px;color:var(--muted);margin:-4px 0 15px}input,select{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:#fff;font:inherit;color:var(--ink);outline:none}input:focus,select:focus{border-color:#76a994;box-shadow:0 0 0 3px rgba(118,169,148,.16)}.msg{min-height:22px;color:var(--green)}.error{color:var(--red)}.hidden{display:none!important}.modal{position:fixed;inset:0;background:rgba(10,38,29,.68);display:grid;place-items:center;padding:18px;z-index:6;backdrop-filter:blur(5px)}.modal .card{width:min(520px,100%)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:14px}th{font-size:12px;color:var(--muted);letter-spacing:.04em}.tablewrap{overflow:auto}.badge{padding:5px 9px;border-radius:99px;background:var(--sage);color:var(--green2);font-size:12px;font-weight:800}.loading{display:inline-flex;gap:8px;align-items:center}.spinner{width:16px;height:16px;border:2px solid #c8ddd5;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:800px){main{padding:0 14px 35px;margin-top:22px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.form,.admin-form{grid-template-columns:1fr}.toolbar{align-items:flex-start;flex-direction:column}.brand{font-size:14px}.brand:before{width:31px;height:31px;margin-right:8px}.userbox{font-size:11px}.file-row{align-items:flex-start}.toolbar-actions{width:100%}.toolbar-actions>*{flex:1;text-align:center}.login{padding:32px 22px;margin-top:45px}.login h1{font-size:25px}}@media(max-width:430px){.stats{grid-template-columns:1fr 1fr}.stat{padding:12px}.stat b{font-size:21px}.card{padding:17px}.file-row{display:block}.file-row>span:last-child{display:block;margin-top:8px}.head{align-items:flex-start}.version{display:none}}
-</style></head><body><header><div class="head"><div class="brand">創世基金會草屯院｜工作申請與結案管理平台 <span class="version">v4.4</span></div><div id="who" class="userbox">尚未登入</div></div></header><main>
-<section id="login" class="card login"><h1>Google 帳號登入</h1><p class="sub">工作申請、主管審核與結案資料集中管理。<br>登入後將在這台裝置保留30天。</p><div id="autoLogin" class="msg hidden"><span class="loading"><span class="spinner"></span>正在自動登入…</span></div><div id="googleButton"></div><p id="loginMsg" class="msg"></p></section>
-<section id="app" class="hidden"><div class="toolbar"><div><div class="eyebrow">WORKFLOW CENTER</div><h1 style="margin:0">案件管理中心</h1><div id="summary" class="sub"></div></div><div class="toolbar-actions"><a id="driveLink" class="btn ghost hidden" target="_blank" rel="noopener">開啟專用雲端資料夾</a><button class="ghost" onclick="logout()">登出</button></div></div><div id="stats" class="stats"></div><div class="tabs"><button class="tab on" onclick="showTab('cases',this)">案件列表</button><button id="newTab" class="tab" onclick="showTab('new',this)">建立申請</button><button id="adminTab" class="tab hidden" onclick="showTab('admin',this)">人員與權限</button></div>
-<section id="casesPanel"><div id="caseGrid" class="grid"></div></section>
-<section id="newPanel" class="card hidden"><h2>建立工作申請</h2><form class="form" onsubmit="createCase(event)"><input id="title" placeholder="案件／活動名稱" required><button class="primary">建立案件</button></form><p class="sub">申請日期與時間將由系統自動記錄。</p><p id="newMsg" class="msg"></p></section>
-<section id="adminPanel" class="card hidden"><div class="eyebrow">ACCESS CONTROL</div><h2 style="margin:3px 0 8px">白名單與姓名管理</h2><p class="field-note">姓名會顯示在案件卡上，讓主管直接辨識申請人；啟用帳號前必須填寫。</p><form class="admin-form" onsubmit="saveUser(event)"><input id="email" type="email" placeholder="Google Email" aria-label="Google Email" required><input id="name" placeholder="姓名（必填）" aria-label="姓名" required><select id="role" aria-label="權限"><option value="staff">工作人員</option><option value="manager">主管</option><option value="admin">管理員</option></select><select id="status" aria-label="狀態"><option value="active">啟用</option><option value="disabled">停用</option></select><button class="primary">儲存人員</button></form><p id="adminMsg" class="msg"></p><div class="tablewrap"><table><thead><tr><th>姓名</th><th>Email</th><th>權限</th><th>狀態</th><th>操作</th></tr></thead><tbody id="userRows"></tbody></table></div></section></section></main>
-<div id="uploadModal" class="modal hidden"><div class="card"><h2 id="uploadTitle">上傳檔案</h2><form id="uploadForm" method="post" target="uploadFrame"><input type="hidden" name="action" value="upload"><input type="hidden" name="authToken" id="uploadToken"><input type="hidden" name="caseId" id="uploadCase"><input type="hidden" name="fileType" id="uploadType"><input type="hidden" name="fileName" id="uploadName"><input type="hidden" name="mimeType" id="uploadMime"><input type="hidden" name="fileData" id="uploadData"><input id="filePicker" type="file" required><p class="sub">單一檔案上限 8MB；替換後舊檔會保留在Drive資料夾。</p><p id="uploadMsg" class="msg"></p><div class="actions"><button class="primary">上傳</button><button type="button" class="ghost" onclick="closeUpload()">取消</button></div></form><iframe name="uploadFrame" class="hidden"></iframe></div></div>
-<div id="editModal" class="modal hidden"><div class="card"><h2>編輯案件</h2><form onsubmit="saveCaseEdit(event)"><input type="hidden" id="editCaseId"><p><input id="editTitle" placeholder="案件名稱" required></p><p id="editMsg" class="msg"></p><div class="actions"><button class="primary">儲存修改</button><button type="button" class="ghost" onclick="closeEdit()">取消</button></div></form></div></div>
-<script>
-const CLIENT='512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com',API='https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec',FRONT_VERSION='4.4.0';let token=localStorage.getItem('workAuthToken')||'',data={user:{},cases:[],users:[]};
-window.onload=()=>{document.getElementById('uploadForm').action=API;google.accounts.id.initialize({client_id:CLIENT,callback:googleLogin});google.accounts.id.renderButton(document.getElementById('googleButton'),{theme:'outline',size:'large',shape:'pill',text:'signin_with',locale:'zh_TW'});if(token){document.getElementById('googleButton').classList.add('hidden');document.getElementById('autoLogin').classList.remove('hidden');load(true)}};
-async function googleLogin(r){setMsg('loginMsg','正在登入…');try{const x=await api('login',{idToken:r.credential});token=x.authToken;localStorage.setItem('workAuthToken',token);load()}catch(e){setMsg('loginMsg',e.message,true)}}
-function api(action,p={}){return new Promise((ok,no)=>{const cb='cb_'+Date.now()+'_'+Math.floor(Math.random()*1e6),s=document.createElement('script');window[cb]=r=>{delete window[cb];s.remove();r.ok?ok(r):no(Error(r.error||'錯誤'))};s.onerror=()=>no(Error('無法連接後台'));s.src=API+'?'+new URLSearchParams({...p,action,authToken:token,callback:cb});document.body.appendChild(s)})}
-async function load(auto=false){if(!auto)setMsg('loginMsg','正在登入…');try{data=await api('dashboard');document.getElementById('autoLogin').classList.add('hidden');document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');const role=String(data.user.role||'').trim().toLowerCase();data.user.role=role;document.getElementById('who').textContent=(data.user.name||data.user.email)+'｜'+roleName(role);document.getElementById('adminTab').classList.toggle('hidden',role!=='admin');document.getElementById('newTab').classList.toggle('hidden',role==='manager');const drive=document.getElementById('driveLink');drive.classList.add('hidden');drive.removeAttribute('href');if(role==='admin'&&data.rootFolderUrl){drive.href=data.rootFolderUrl;drive.classList.remove('hidden')}render()}catch(e){if(auto||String(e.message).includes('登入')){localStorage.removeItem('workAuthToken');token='';document.getElementById('autoLogin').classList.add('hidden');document.getElementById('googleButton').classList.remove('hidden')}setMsg('loginMsg',e.message,true)}}
-function render(){const unread=data.cases.filter(c=>data.user.role==='staff'?c.staffUnread:c.managerUnread).length,pending=data.cases.filter(c=>['application_pending','closure_pending'].includes(c.status)).length,active=data.cases.filter(c=>c.status==='approved').length,closed=data.cases.filter(c=>c.status==='closed').length;document.getElementById('summary').textContent=`共 ${data.cases.length} 件案件，${unread} 件需要留意`;document.getElementById('stats').innerHTML=`<div class="stat"><b>${data.cases.length}</b><span>全部案件</span></div><div class="stat"><b>${pending}</b><span>待主管審核</span></div><div class="stat"><b>${active}</b><span>執行中</span></div><div class="stat"><b>${closed}</b><span>已結案</span></div>`;document.getElementById('caseGrid').innerHTML=data.cases.length?data.cases.map(caseCard).join(''):'<div class="card sub">目前沒有案件，請從「建立申請」開始。</div>';renderUsers()}
-function caseCard(c){const isAdmin=data.user.role==='admin',isOwner=data.user.email===c.applicantEmail,unread=data.user.role==='staff'?c.staffUnread:c.managerUnread,files=[['申請書｜待審核版',c.application,'application',c.applicationUploader],['申請書｜主管核定版',c.applicationReview,'application_review',c.applicationReviewUploader],['結案報告｜待審核版',c.closure,'closure',c.closureUploader],['結案報告｜主管核定版',c.closureReview,'closure_review',c.closureReviewUploader]].map(x=>fileRow(c,...x)).join('');let up='';if((data.user.role==='staff'||isAdmin)&&c.status==='draft'&&(isOwner||isAdmin))up=uploadBtn(c,'application','上傳申請書');if((data.user.role==='manager'||isAdmin)&&c.status==='application_pending')up=uploadBtn(c,'application_review','上傳申請核定版');if((data.user.role==='staff'||isAdmin)&&c.status==='approved'&&(isOwner||isAdmin))up=uploadBtn(c,'closure','上傳結案報告');if((data.user.role==='manager'||isAdmin)&&c.status==='closure_pending')up=uploadBtn(c,'closure_review','上傳結案核定版');const adminLabel=isAdmin?'<div class="admin-label">管理員操作</div>':'',edit=(isAdmin||isOwner)?`<button class="ghost" onclick="event.stopPropagation();openEdit('${c.id}')">編輯案件</button>`:'',del=isAdmin?`<button class="danger" onclick="event.stopPropagation();deleteCase('${c.id}')">刪除案件</button>`:'';const statusClass=['application_pending','closure_pending'].includes(c.status)?'pending':c.status==='closed'?'closed':'';return`<article class="card case ${unread?'unread':''}" onclick="readCase('${c.id}')">${unread?'<span class="dot"></span>':''}<h3>${esc(c.title)}</h3><div class="meta">${c.id}｜申請人：<strong>${esc(c.applicantName||'未設定姓名')}</strong><br>申請時間：${esc(c.eventDate||c.createdAt||'—')}</div><div class="status ${statusClass}">${statusName(c.status)}</div><div class="files">${files}</div><div class="actions">${adminLabel}${up}${edit}${del}</div></article>`}
-function fileRow(c,label,url,type,uploader){if(!url)return`<div class="file-row"><span>${label}</span><span class="missing">尚未上傳</span></div>`;const replace=data.user.role==='admin'||data.user.email===uploader;return`<div class="file-row"><span>${label}</span><span><a class="btn ghost download" target="_blank" href="${url}" onclick="event.stopPropagation()">下載</a>${replace?` <button class="ghost download" onclick="event.stopPropagation();openUpload('${c.id}','${type}','替換${label}')">替換</button>`:''}</span></div>`}
-function uploadBtn(c,t,label){return`<button class="primary" onclick="event.stopPropagation();openUpload('${c.id}','${t}','${label}')">${label}</button>`}
-async function createCase(e){e.preventDefault();setMsg('newMsg','建立中…');try{data=await api('createCase',{title:v('title')});e.target.reset();showTab('cases',document.querySelector('.tab'));render()}catch(x){setMsg('newMsg',x.message,true)}}
-async function readCase(id){try{data=await api('markRead',{caseId:id});render()}catch(e){}}
-function openUpload(id,t,label){document.getElementById('uploadModal').classList.remove('hidden');document.getElementById('uploadTitle').textContent=label;document.getElementById('uploadCase').value=id;document.getElementById('uploadType').value=t;document.getElementById('uploadToken').value=token}function closeUpload(){document.getElementById('uploadModal').classList.add('hidden');document.getElementById('uploadForm').reset();setMsg('uploadMsg','')}
-function openEdit(id){const c=data.cases.find(x=>x.id===id);document.getElementById('editCaseId').value=id;document.getElementById('editTitle').value=c.title;document.getElementById('editModal').classList.remove('hidden')}function closeEdit(){document.getElementById('editModal').classList.add('hidden')}async function saveCaseEdit(e){e.preventDefault();try{data=await api('editCase',{caseId:v('editCaseId'),title:v('editTitle')});closeEdit();render()}catch(x){setMsg('editMsg',x.message,true)}}async function deleteCase(id){if(!confirm('確定刪除這個案件？案件資料夾會移至Google Drive垃圾桶。'))return;try{data=await api('deleteCase',{caseId:id});render()}catch(x){alert(x.message)}}
-document.getElementById('uploadForm').onsubmit=async e=>{e.preventDefault();const f=document.getElementById('filePicker').files[0];if(!f)return;if(f.size>8*1024*1024)return setMsg('uploadMsg','檔案不可超過8MB',true);setMsg('uploadMsg','正在上傳…');document.getElementById('uploadName').value=f.name;document.getElementById('uploadMime').value=f.type;document.getElementById('uploadData').value=await base64(f);const id=document.getElementById('uploadCase').value,type=document.getElementById('uploadType').value;e.target.submit();pollUpload(id,type)};
-async function pollUpload(id,type){const field={application:'application',application_review:'applicationReview',closure:'closure',closure_review:'closureReview'}[type];for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,2500));try{const d=await api('dashboard'),c=d.cases.find(x=>x.id===id);if(c&&c[field]){data=d;closeUpload();render();return}}catch(e){}}setMsg('uploadMsg','後台仍在處理，請重新整理頁面確認',true)}
-window.addEventListener('message',async e=>{if(e.origin!=='https://script.google.com'&&!e.origin.endsWith('-script.googleusercontent.com'))return;if(e.data&&e.data.ok){closeUpload();data=await api('dashboard');render()}else if(e.data)setMsg('uploadMsg',e.data.error||'上傳失敗',true)});
-async function saveUser(e){e.preventDefault();try{data=await api('saveUser',{email:v('email'),name:v('name'),role:v('role'),status:v('status')});e.target.reset();render();setMsg('adminMsg','已更新')}catch(x){setMsg('adminMsg',x.message,true)}}
-function renderUsers(){document.getElementById('userRows').innerHTML=(data.users||[]).map(u=>`<tr><td>${esc(u.name)||'—'}</td><td>${esc(u.email)}</td><td><span class="badge">${roleName(u.role)}</span></td><td>${u.status==='active'?'啟用':'停用'}</td><td><button class="ghost" onclick="editUser('${u.email}')">編輯</button>${u.email!=='hty0814ex@gmail.com'?` <button class="danger" onclick="deleteUser('${u.email}')">刪除</button>`:''}</td></tr>`).join('')}
-async function deleteUser(email){const user=(data.users||[]).find(u=>u.email===email)||{};if(!confirm(`確定將「${user.name||email}」從白名單刪除？\n該帳號會立即失去登入與檔案存取權限。`))return;setMsg('adminMsg','正在刪除…');try{data=await api('deleteUser',{email});render();setMsg('adminMsg','已刪除白名單帳號')}catch(x){setMsg('adminMsg',x.message,true)}}
-function editUser(e){const u=data.users.find(x=>x.email===e);['email','name','role','status'].forEach(k=>document.getElementById(k).value=u[k])}function showTab(n,b){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');['cases','new','admin'].forEach(x=>document.getElementById(x+'Panel').classList.toggle('hidden',x!==n))}async function logout(){const old=token;localStorage.removeItem('workAuthToken');token='';try{token=old;await api('logout')}catch(e){}token='';location.reload()}function v(i){return document.getElementById(i).value.trim()}function setMsg(i,m,e=false){const x=document.getElementById(i);x.textContent=m;x.className='msg'+(e?' error':'')}function base64(f){return new Promise((ok,no)=>{const r=new FileReader;r.onload=()=>ok(r.result.split(',')[1]);r.onerror=no;r.readAsDataURL(f)})}function roleName(r){return{staff:'工作人員',manager:'主管',admin:'管理員'}[r]||r}function statusName(s){return{draft:'待上傳申請書',application_pending:'申請待審核',approved:'執行中',closure_pending:'結案待審核',closed:'已結案'}[s]||s}function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-</script></body></html>
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>創世基金會草屯院｜工作申請與結案管理平台</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+      :root {
+        --green: #145c48;
+        --green2: #0d4738;
+        --sage: #dfece5;
+        --cream: #f6f3ec;
+        --paper: #fffdfa;
+        --ink: #193029;
+        --muted: #718079;
+        --line: #dde5df;
+        --amber: #d88b21;
+        --red: #b33a32;
+        --shadow: 0 14px 38px rgba(24, 58, 47, 0.09);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--cream);
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 90% 0, #e3eee8 0, transparent 28rem),
+          var(--cream);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC",
+          sans-serif;
+        min-height: 100vh;
+      }
+      header {
+        background: linear-gradient(115deg, var(--green2), var(--green));
+        color: #fff;
+        padding: 17px 22px;
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        box-shadow: 0 5px 18px rgba(13, 71, 56, 0.17);
+      }
+      .head {
+        max-width: 1180px;
+        margin: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+      }
+      .brand {
+        font-weight: 850;
+        font-size: 19px;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+      }
+      .brand:before {
+        content: "簽";
+        display: grid;
+        place-items: center;
+        width: 35px;
+        height: 35px;
+        margin-right: 11px;
+        border-radius: 11px;
+        background: #f2c46d;
+        color: var(--green2);
+        font-weight: 900;
+      }
+      .version {
+        font-size: 10px;
+        opacity: 0.68;
+        margin-left: 8px;
+        font-weight: 600;
+      }
+      .userbox {
+        text-align: right;
+        font-size: 13px;
+        color: #e7f0eb;
+      }
+      main {
+        max-width: 1180px;
+        margin: 32px auto;
+        padding: 0 22px 50px;
+      }
+      .card {
+        background: rgba(255, 253, 250, 0.96);
+        border: 1px solid rgba(221, 229, 223, 0.9);
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+      .login {
+        max-width: 510px;
+        margin: 78px auto;
+        text-align: center;
+        padding: 46px;
+      }
+      .login:before {
+        content: "工作流程管理";
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 99px;
+        background: var(--sage);
+        color: var(--green);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+      .login h1 {
+        font-size: 30px;
+        margin: 18px 0 8px;
+      }
+      .sub {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-end;
+        margin-bottom: 20px;
+      }
+      .eyebrow {
+        color: var(--green);
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        font-weight: 900;
+        margin-bottom: 5px;
+      }
+      .toolbar h1 {
+        font-size: 30px;
+        letter-spacing: -0.03em;
+      }
+      .toolbar-actions {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 0 0 20px;
+      }
+      .stat {
+        background: rgba(255, 253, 250, 0.84);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 15px 17px;
+      }
+      .stat b {
+        display: block;
+        font-size: 25px;
+        color: var(--green2);
+        margin-bottom: 2px;
+      }
+      .stat span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .tabs {
+        display: flex;
+        gap: 7px;
+        overflow: auto;
+        margin-bottom: 18px;
+        padding: 5px;
+        background: rgba(225, 235, 229, 0.7);
+        border-radius: 14px;
+        width: max-content;
+        max-width: 100%;
+      }
+      .tab {
+        background: transparent;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .tab.on {
+        background: var(--paper);
+        color: var(--green2);
+        box-shadow: 0 4px 13px rgba(20, 92, 72, 0.11);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 17px;
+      }
+      .case {
+        position: relative;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .case:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 42px rgba(24, 58, 47, 0.13);
+      }
+      .case.unread {
+        border: 2px solid #e2a04c;
+      }
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #e2a04c;
+        position: absolute;
+        right: 18px;
+        top: 18px;
+        box-shadow: 0 0 0 5px #faedd9;
+      }
+      .case h3 {
+        margin: 0 28px 7px 0;
+        font-size: 19px;
+      }
+      .meta {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+      .status {
+        display: inline-flex;
+        padding: 6px 11px;
+        border-radius: 99px;
+        background: var(--sage);
+        color: var(--green2);
+        font-weight: 800;
+        font-size: 12px;
+        margin: 11px 0;
+      }
+      .status.pending {
+        background: #fff0d9;
+        color: #925c09;
+      }
+      .status.closed {
+        background: #e5e9e7;
+        color: #52605b;
+      }
+      .files {
+        border-top: 1px solid var(--line);
+        margin-top: 8px;
+        padding-top: 9px;
+      }
+      .file-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 0;
+        font-size: 13px;
+      }
+      .missing {
+        color: #a5aea9;
+      }
+      .download {
+        padding: 7px 10px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        padding-top: 13px;
+        border-top: 1px dashed var(--line);
+      }
+      button,
+      .btn {
+        border: 0;
+        border-radius: 11px;
+        padding: 10px 14px;
+        font-weight: 750;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+        transition:
+          filter 0.15s,
+          transform 0.15s;
+      }
+      button:hover,
+      .btn:hover {
+        filter: brightness(0.97);
+        transform: translateY(-1px);
+      }
+      .primary {
+        background: linear-gradient(135deg, var(--green), var(--green2));
+        color: #fff;
+      }
+      .ghost {
+        background: var(--sage);
+        color: var(--green2);
+      }
+      .warn {
+        background: #fff1dd;
+        color: #915807;
+      }
+      .danger {
+        background: #fff0ef;
+        color: var(--red);
+        border: 1px solid #f0c8c4;
+      }
+      .admin-label {
+        font-size: 10px;
+        font-weight: 900;
+        color: var(--red);
+        width: 100%;
+        letter-spacing: 0.13em;
+      }
+      .form {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr auto;
+        gap: 11px;
+      }
+      .admin-form {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr 0.8fr 0.8fr auto;
+        gap: 10px;
+        margin: 15px 0 5px;
+      }
+      .field-note {
+        font-size: 12px;
+        color: var(--muted);
+        margin: -4px 0 15px;
+      }
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 12px 13px;
+        background: #fff;
+        font: inherit;
+        color: var(--ink);
+        outline: none;
+      }
+      input:focus,
+      select:focus {
+        border-color: #76a994;
+        box-shadow: 0 0 0 3px rgba(118, 169, 148, 0.16);
+      }
+      .msg {
+        min-height: 22px;
+        color: var(--green);
+      }
+      .error {
+        color: var(--red);
+      }
+      .hidden {
+        display: none !important;
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 38, 29, 0.68);
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        z-index: 6;
+        backdrop-filter: blur(5px);
+      }
+      .modal .card {
+        width: min(520px, 100%);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 12px 9px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+      th {
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+      .tablewrap {
+        overflow: auto;
+      }
+      .badge {
+        padding: 5px 9px;
+        border-radius: 99px;
+        background: var(--sage);
+        color: var(--green2);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .loading {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #c8ddd5;
+        border-top-color: var(--green);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      #stampModal .card {
+        width: min(980px, 100%);
+        max-height: 96vh;
+        overflow: auto;
+      }
+      .stamp-tools {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 12px 0;
+      }
+      .stamp-tools button {
+        padding: 8px 11px;
+      }
+      .pdf-wrap {
+        overflow: auto;
+        background: #d9dfdc;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        text-align: center;
+        max-height: 62vh;
+      }
+      .pdf-stage {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        line-height: 0;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.18);
+      }
+      #pdfCanvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        background: #fff;
+      }
+      #stampPreview {
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: 145px;
+        height: auto;
+        cursor: move;
+        touch-action: none;
+        user-select: none;
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+      }
+      .stamp-size {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0;
+      }
+      .stamp-size input {
+        padding: 0;
+      }
+      .stamp-note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .checkline {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 11px 12px;
+        margin: 12px 0;
+        border-radius: 11px;
+        background: #fff4df;
+        color: #78500f;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .checkline input {
+        width: auto;
+        margin-top: 3px;
+        flex: 0 0 auto;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (max-width: 800px) {
+        main {
+          padding: 0 14px 35px;
+          margin-top: 22px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .form,
+        .admin-form {
+          grid-template-columns: 1fr;
+        }
+        .toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .brand {
+          font-size: 14px;
+        }
+        .brand:before {
+          width: 31px;
+          height: 31px;
+          margin-right: 8px;
+        }
+        .userbox {
+          font-size: 11px;
+        }
+        .file-row {
+          align-items: flex-start;
+        }
+        .toolbar-actions {
+          width: 100%;
+        }
+        .toolbar-actions > * {
+          flex: 1;
+          text-align: center;
+        }
+        .login {
+          padding: 32px 22px;
+          margin-top: 45px;
+        }
+        .login h1 {
+          font-size: 25px;
+        }
+        #stampModal {
+          padding: 6px;
+        }
+        #stampModal .card {
+          padding: 14px;
+        }
+        .pdf-wrap {
+          padding: 5px;
+        }
+      }
+      @media (max-width: 430px) {
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .stat {
+          padding: 12px;
+        }
+        .stat b {
+          font-size: 21px;
+        }
+        .card {
+          padding: 17px;
+        }
+        .file-row {
+          display: block;
+        }
+        .file-row > span:last-child {
+          display: block;
+          margin-top: 8px;
+        }
+        .head {
+          align-items: flex-start;
+        }
+        .version {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="head">
+        <div class="brand">
+          創世基金會草屯院｜工作申請與結案管理平台
+          <span class="version">v4.9</span>
+        </div>
+        <div id="who" class="userbox">尚未登入</div>
+      </div>
+    </header>
+    <main>
+      <section id="login" class="card login">
+        <h1>Google 帳號登入</h1>
+        <p class="sub">
+          工作申請、主管審核與結案資料集中管理。<br />登入後將在這台裝置保留30天。
+        </p>
+        <div id="autoLogin" class="msg hidden">
+          <span class="loading"
+            ><span class="spinner"></span>正在自動登入…</span
+          >
+        </div>
+        <div id="googleButton"></div>
+        <p id="loginMsg" class="msg"></p>
+      </section>
+      <section id="app" class="hidden">
+        <div class="toolbar">
+          <div>
+            <div class="eyebrow">WORKFLOW CENTER</div>
+            <h1 style="margin: 0">案件管理中心</h1>
+            <div id="summary" class="sub"></div>
+          </div>
+          <div class="toolbar-actions">
+            <a
+              id="driveLink"
+              class="btn ghost hidden"
+              target="_blank"
+              rel="noopener"
+              >開啟專用雲端資料夾</a
+            ><button class="ghost" onclick="logout()">登出</button>
+          </div>
+        </div>
+        <div id="stats" class="stats"></div>
+        <div class="tabs">
+          <button class="tab on" onclick="showTab('cases', this)">
+            案件列表</button
+          ><button id="newTab" class="tab" onclick="showTab('new', this)">
+            建立申請</button
+          ><button
+            id="adminTab"
+            class="tab hidden"
+            onclick="showTab('admin', this)"
+          >
+            人員與權限
+          </button>
+        </div>
+        <section id="casesPanel">
+          <div id="caseGrid" class="grid"></div>
+        </section>
+        <section id="newPanel" class="card hidden">
+          <h2>建立工作申請</h2>
+          <form class="form" onsubmit="createCase(event)">
+            <input
+              id="caseYear"
+              type="number"
+              min="100"
+              max="9999"
+              inputmode="numeric"
+              placeholder="年度，例如 115"
+              required
+            /><input id="title" placeholder="案件／活動名稱" required /><button
+              class="primary"
+            >
+              建立案件
+            </button>
+          </form>
+          <p class="sub">年度預設為今年；申請日期與時間由系統自動記錄。</p>
+          <p id="newMsg" class="msg"></p>
+        </section>
+        <section id="adminPanel" class="card hidden">
+          <div class="eyebrow">ACCESS CONTROL</div>
+          <h2 style="margin: 3px 0 8px">白名單、姓名與職位管理</h2>
+          <p class="field-note">
+            職位決定審核順序；需要PDF核章的人員，姓名必須設定為三個中文字。
+          </p>
+          <form class="admin-form" onsubmit="saveUser(event)">
+            <input
+              id="email"
+              type="email"
+              placeholder="Google Email"
+              aria-label="Google Email"
+              required
+            /><input
+              id="name"
+              placeholder="姓名（必填）"
+              aria-label="姓名"
+              required
+            /><select id="role" aria-label="職位">
+              <option value="social">社資</option>
+              <option value="deputy">副組長</option>
+              <option value="director">院長</option>
+              <option value="supervisor">督導</option>
+              <option value="admin">管理員</option></select
+            ><select id="status" aria-label="狀態">
+              <option value="active">啟用</option>
+              <option value="disabled">停用</option></select
+            ><button class="primary">儲存人員</button>
+          </form>
+          <p id="adminMsg" class="msg"></p>
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>Email</th>
+                  <th>職位</th>
+                  <th>狀態</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="userRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div id="uploadModal" class="modal hidden">
+      <div class="card">
+        <h2 id="uploadTitle">上傳檔案</h2>
+        <form id="uploadForm" method="post" target="uploadFrame">
+          <input type="hidden" name="action" value="upload" /><input
+            type="hidden"
+            name="authToken"
+            id="uploadToken"
+          /><input type="hidden" name="caseId" id="uploadCase" /><input
+            type="hidden"
+            name="fileType"
+            id="uploadType"
+          /><input type="hidden" name="fileName" id="uploadName" /><input
+            type="hidden"
+            name="mimeType"
+            id="uploadMime"
+          /><input type="hidden" name="fileData" id="uploadData" /><input
+            type="hidden"
+            name="stampName"
+            id="uploadStampName"
+          /><input type="hidden" name="stampDate" id="uploadStampDate" /><input
+            type="hidden"
+            name="stampPage"
+            id="uploadStampPage"
+          /><input type="hidden" name="stamped" id="uploadStamped" /><input
+            type="hidden"
+            name="skipPreApproval"
+            id="uploadSkipPreApproval"
+          /><input id="filePicker" type="file" required />
+          <label id="skipWrap" class="checkline hidden"
+            ><input id="skipPreApproval" type="checkbox" />
+            <span id="skipText"
+              >這份文件已經由副組長及院長核章，送出後直接交由督導審核</span
+            ></label
+          >
+          <p class="sub">單一檔案上限 8MB；替換後舊檔會保留在Drive資料夾。</p>
+          <p id="uploadMsg" class="msg"></p>
+          <div class="actions">
+            <button class="primary">上傳</button
+            ><button type="button" class="ghost" onclick="closeUpload()">
+              取消
+            </button>
+          </div>
+        </form>
+        <iframe name="uploadFrame" class="hidden"></iframe>
+      </div>
+    </div>
+    <div id="stampModal" class="modal hidden">
+      <div class="card">
+        <div class="eyebrow">PDF APPROVAL STAMP</div>
+        <h2 id="stampTitle">主管核定並蓋章</h2>
+        <p class="stamp-note">
+          PDF可以選擇定位核章或直接送出；Word、Excel、圖片等其他格式可以直接送出，但無法自動核章。
+        </p>
+        <input id="stampFile" type="file" />
+        <p id="stampMsg" class="msg"></p>
+        <div id="stampDirectActions" class="actions hidden">
+          <button
+            id="directReview"
+            type="button"
+            class="warn"
+            onclick="submitReviewDirect()"
+          >
+            不核章直接送出</button
+          ><button type="button" class="ghost" onclick="closeStamp()">
+            取消
+          </button>
+        </div>
+        <section id="stampWorkspace" class="hidden">
+          <div class="stamp-tools">
+            <button type="button" class="ghost" onclick="changeStampPage(-1)">
+              上一頁</button
+            ><strong id="stampPageLabel"></strong
+            ><button type="button" class="ghost" onclick="changeStampPage(1)">
+              下一頁
+            </button>
+          </div>
+          <div class="pdf-wrap">
+            <div id="pdfStage" class="pdf-stage">
+              <canvas id="pdfCanvas"></canvas
+              ><canvas id="stampPreview" width="500" height="620"></canvas>
+            </div>
+          </div>
+          <label class="stamp-size"
+            >印章大小<input
+              id="stampSize"
+              type="range"
+              min="80"
+              max="230"
+              value="145"
+          /></label>
+          <div class="actions">
+            <button
+              type="button"
+              id="confirmStamp"
+              class="primary"
+              onclick="confirmPdfStamp()"
+            >
+              確認核定並蓋章</button
+            ><button type="button" class="ghost" onclick="closeStamp()">
+              取消
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div id="editModal" class="modal hidden">
+      <div class="card">
+        <h2>編輯案件</h2>
+        <form onsubmit="saveCaseEdit(event)">
+          <input type="hidden" id="editCaseId" />
+          <p><input id="editTitle" placeholder="案件名稱" required /></p>
+          <p id="editMsg" class="msg"></p>
+          <div class="actions">
+            <button class="primary">儲存修改</button
+            ><button type="button" class="ghost" onclick="closeEdit()">
+              取消
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      const CLIENT =
+          "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
+        API =
+          "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
+        FRONT_VERSION = "4.9.0";
+      let token = localStorage.getItem("workAuthToken") || "",
+        data = { user: {}, cases: [], users: [] };
+      if (window.pdfjsLib)
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      let stampState = {
+        file: null,
+        bytes: null,
+        pdf: null,
+        page: 1,
+        pages: 0,
+        caseId: "",
+        type: "",
+        label: "",
+        oldUrl: "",
+        renderTask: null,
+      };
+      window.onload = () => {
+        document.getElementById("uploadForm").action = API;
+        google.accounts.id.initialize({
+          client_id: CLIENT,
+          callback: googleLogin,
+        });
+        google.accounts.id.renderButton(
+          document.getElementById("googleButton"),
+          {
+            theme: "outline",
+            size: "large",
+            shape: "pill",
+            text: "signin_with",
+            locale: "zh_TW",
+          },
+        );
+        if (token) {
+          document.getElementById("googleButton").classList.add("hidden");
+          document.getElementById("autoLogin").classList.remove("hidden");
+          load(true);
+        }
+      };
+      async function googleLogin(r) {
+        setMsg("loginMsg", "正在登入…");
+        try {
+          const x = await api("login", { idToken: r.credential });
+          token = x.authToken;
+          localStorage.setItem("workAuthToken", token);
+          load();
+        } catch (e) {
+          setMsg("loginMsg", e.message, true);
+        }
+      }
+      function api(action, p = {}) {
+        return new Promise((ok, no) => {
+          const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6),
+            s = document.createElement("script");
+          window[cb] = (r) => {
+            delete window[cb];
+            s.remove();
+            r.ok ? ok(r) : no(Error(r.error || "錯誤"));
+          };
+          s.onerror = () => no(Error("無法連接後台"));
+          s.src =
+            API +
+            "?" +
+            new URLSearchParams({
+              ...p,
+              action,
+              authToken: token,
+              callback: cb,
+            });
+          document.body.appendChild(s);
+        });
+      }
+      async function load(auto = false) {
+        if (!auto) setMsg("loginMsg", "正在登入…");
+        try {
+          data = await api("dashboard");
+          document.getElementById("autoLogin").classList.add("hidden");
+          document.getElementById("login").classList.add("hidden");
+          document.getElementById("app").classList.remove("hidden");
+          const role = String(data.user.role || "")
+            .trim()
+            .toLowerCase();
+          data.user.role = role;
+          document.getElementById("who").textContent =
+            (data.user.name || data.user.email) + "｜" + roleName(role);
+          document
+            .getElementById("adminTab")
+            .classList.toggle("hidden", role !== "admin");
+          document.getElementById("newTab").classList.remove("hidden");
+          const drive = document.getElementById("driveLink");
+          drive.classList.add("hidden");
+          drive.removeAttribute("href");
+          if (role === "admin" && data.rootFolderUrl) {
+            drive.href = data.rootFolderUrl;
+            drive.classList.remove("hidden");
+          }
+          render();
+        } catch (e) {
+          if (auto || String(e.message).includes("登入")) {
+            localStorage.removeItem("workAuthToken");
+            token = "";
+            document.getElementById("autoLogin").classList.add("hidden");
+            document.getElementById("googleButton").classList.remove("hidden");
+          }
+          setMsg("loginMsg", e.message, true);
+        }
+      }
+      function render() {
+        const unread = data.cases.filter(caseUnread).length,
+          pending = data.cases.filter((c) =>
+            String(c.status).includes("_pending_"),
+          ).length,
+          active = data.cases.filter((c) => c.status === "approved").length,
+          closed = data.cases.filter((c) => c.status === "closed").length;
+        document.getElementById("summary").textContent =
+          `共 ${data.cases.length} 件案件，${unread} 件需要留意`;
+        document.getElementById("stats").innerHTML =
+          `<div class="stat"><b>${data.cases.length}</b><span>全部案件</span></div><div class="stat"><b>${pending}</b><span>待分級審核</span></div><div class="stat"><b>${active}</b><span>執行中</span></div><div class="stat"><b>${closed}</b><span>已結案</span></div>`;
+        document.getElementById("caseGrid").innerHTML = data.cases.length
+          ? data.cases.map(caseCard).join("")
+          : '<div class="card sub">目前沒有案件，請從「建立申請」開始。</div>';
+        renderUsers();
+      }
+      function pendingRole(status) {
+        return String(status || "").includes("_pending_")
+          ? String(status).split("_pending_")[1]
+          : "";
+      }
+      function caseUnread(c) {
+        if (data.user.email === c.applicantEmail) return c.staffUnread;
+        const target = pendingRole(c.status);
+        return (
+          c.managerUnread &&
+          (data.user.role === "admin" || data.user.role === target)
+        );
+      }
+      function stageSkipped(c, phase, stage) {
+        const role = c.applicantRole,
+          manual = phase === "application" ? c.skipApplication : c.skipClosure;
+        if (role === "social")
+          return manual && ["deputy", "director"].includes(stage);
+        if (role === "deputy")
+          return stage === "deputy" || (manual && stage === "director");
+        if (role === "director") return ["deputy", "director"].includes(stage);
+        if (role === "supervisor") return true;
+        return false;
+      }
+      function caseCard(c) {
+        const isAdmin = data.user.role === "admin",
+          isOwner = data.user.email === c.applicantEmail,
+          unread = caseUnread(c),
+          files = [
+            [
+              "申請｜原始版",
+              c.application,
+              "application",
+              c.applicationUploader,
+            ],
+            [
+              "申請｜副組長核定版",
+              c.applicationDeputy,
+              "application_deputy",
+              c.applicationDeputyUploader,
+              c.applicationDeputyStamp,
+              stageSkipped(c, "application", "deputy"),
+            ],
+            [
+              "申請｜院長核定版",
+              c.applicationDirector,
+              "application_director",
+              c.applicationDirectorUploader,
+              c.applicationDirectorStamp,
+              stageSkipped(c, "application", "director"),
+            ],
+            [
+              "申請｜督導核定版",
+              c.applicationReview,
+              "application_supervisor",
+              c.applicationReviewUploader,
+              c.applicationSupervisorStamp,
+              stageSkipped(c, "application", "supervisor"),
+            ],
+            ["結案｜原始版", c.closure, "closure", c.closureUploader],
+            [
+              "結案｜副組長核定版",
+              c.closureDeputy,
+              "closure_deputy",
+              c.closureDeputyUploader,
+              c.closureDeputyStamp,
+              stageSkipped(c, "closure", "deputy"),
+            ],
+            [
+              "結案｜院長核定版",
+              c.closureDirector,
+              "closure_director",
+              c.closureDirectorUploader,
+              c.closureDirectorStamp,
+              stageSkipped(c, "closure", "director"),
+            ],
+            [
+              "結案｜督導核定版",
+              c.closureReview,
+              "closure_supervisor",
+              c.closureReviewUploader,
+              c.closureSupervisorStamp,
+              stageSkipped(c, "closure", "supervisor"),
+            ],
+          ]
+            .map((x) => fileRow(c, ...x))
+            .join("");
+        let up = "";
+        if (c.status === "draft" && (isOwner || isAdmin))
+          up = uploadBtn(c, "application", "上傳申請書");
+        const target = pendingRole(c.status);
+        if (
+          String(c.status).startsWith("application_pending_") &&
+          (data.user.role === target || isAdmin)
+        )
+          up = uploadBtn(
+            c,
+            "application_" + target,
+            roleName(target) + "審核申請",
+          );
+        if (c.status === "approved" && (isOwner || isAdmin))
+          up = uploadBtn(c, "closure", "上傳結案報告");
+        if (
+          String(c.status).startsWith("closure_pending_") &&
+          (data.user.role === target || isAdmin)
+        )
+          up = uploadBtn(c, "closure_" + target, roleName(target) + "審核結案");
+        const adminLabel = isAdmin
+            ? '<div class="admin-label">管理員操作</div>'
+            : "",
+          edit =
+            isAdmin || isOwner
+              ? `<button class="ghost" onclick="event.stopPropagation();openEdit('${c.id}')">編輯案件</button>`
+              : "",
+          del = isAdmin
+            ? `<button class="danger" onclick="event.stopPropagation();deleteCase('${c.id}')">刪除案件</button>`
+            : "";
+        const statusClass = String(c.status).includes("_pending_")
+          ? "pending"
+          : c.status === "closed"
+            ? "closed"
+            : "";
+        return `<article class="card case ${unread ? "unread" : ""}" onclick="readCase('${c.id}')">${unread ? '<span class="dot"></span>' : ""}<h3><span class="badge">${esc(c.year)}年度</span> ${esc(c.title)}</h3><div class="meta">${c.id}｜申請人：<strong>${esc(c.applicantName || "未設定姓名")}</strong>（${roleName(c.applicantRole)}）<br>申請時間：${esc(c.eventDate || c.createdAt || "—")}</div><div class="status ${statusClass}">${statusName(c.status)}</div><div class="files">${files}</div><div class="actions">${adminLabel}${up}${edit}${del}</div></article>`;
+      }
+      function fileRow(
+        c,
+        label,
+        url,
+        type,
+        uploader,
+        stamp = "",
+        skipped = false,
+      ) {
+        if (!url && skipped)
+          return `<div class="file-row"><span>${label}</span><span class="missing">流程略過</span></div>`;
+        if (!url)
+          return `<div class="file-row"><span>${label}</span><span class="missing">尚未上傳</span></div>`;
+        const replace =
+          data.user.role === "admin" || data.user.email === uploader;
+        const mark = stamp
+          ? `<small class="${stamp === "已核章" ? "status" : "missing"}">${stamp}</small> `
+          : "";
+        return `<div class="file-row"><span>${label}</span><span>${mark}<a class="btn ghost download" target="_blank" href="${url}" onclick="event.stopPropagation()">下載</a>${replace ? ` <button class="ghost download" onclick="event.stopPropagation();openUpload('${c.id}','${type}','替換${label}')">替換</button>` : ""}</span></div>`;
+      }
+      function uploadBtn(c, t, label) {
+        return `<button class="primary" onclick="event.stopPropagation();openUpload('${c.id}','${t}','${label}')">${label}</button>`;
+      }
+      async function createCase(e) {
+        e.preventDefault();
+        setMsg("newMsg", "建立中…");
+        try {
+          data = await api("createCase", {
+            year: v("caseYear"),
+            title: v("title"),
+          });
+          e.target.reset();
+          setDefaultYear();
+          showTab("cases", document.querySelector(".tab"));
+          render();
+        } catch (x) {
+          setMsg("newMsg", x.message, true);
+        }
+      }
+      async function readCase(id) {
+        try {
+          data = await api("markRead", { caseId: id });
+          render();
+        } catch (e) {}
+      }
+      function isReviewType(t) {
+        return /_(deputy|director|supervisor)$/.test(String(t || ""));
+      }
+      function openUpload(id, t, label) {
+        if (isReviewType(t)) return openStamp(id, t, label);
+        document.getElementById("uploadModal").classList.remove("hidden");
+        document.getElementById("uploadTitle").textContent = label;
+        prepareUploadFields(id, t);
+        const c = data.cases.find((x) => x.id === id) || {},
+          canSkip =
+            ["social", "deputy"].includes(data.user.role) &&
+            ["application", "closure"].includes(t) &&
+            !caseFileUrl(id, t) &&
+            c.applicantRole === data.user.role;
+        document.getElementById("skipText").textContent =
+          c.applicantRole === "deputy"
+            ? "這份文件已經由院長核章，送出後直接交由督導審核"
+            : "這份文件已經由副組長及院長核章，送出後直接交由督導審核";
+        document
+          .getElementById("skipWrap")
+          .classList.toggle("hidden", !canSkip);
+        document.getElementById("skipPreApproval").checked = false;
+      }
+      function prepareUploadFields(id, t) {
+        document.getElementById("uploadCase").value = id;
+        document.getElementById("uploadType").value = t;
+        document.getElementById("uploadToken").value = token;
+      }
+      function closeUpload() {
+        document.getElementById("uploadModal").classList.add("hidden");
+        document.getElementById("uploadForm").reset();
+        document.getElementById("skipWrap").classList.add("hidden");
+        setMsg("uploadMsg", "");
+      }
+      function validStampName() {
+        const n = String(data.user.name || "").replace(/\s/g, "");
+        if (!/^[\u3400-\u9fff]{3}$/.test(n))
+          throw new Error(
+            "核章姓名必須是三個中文字，請先由管理員修改白名單姓名",
+          );
+        return n;
+      }
+      function rocStampDate() {
+        const p = {};
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Taipei",
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        })
+          .formatToParts(new Date())
+          .forEach((x) => (p[x.type] = x.value));
+        return `民國${Number(p.year) - 1911}年${Number(p.month)}月${Number(p.day)}日`;
+      }
+      function drawStampPreview() {
+        const n = validStampName(),
+          date = rocStampDate(),
+          c = document.getElementById("stampPreview"),
+          x = c.getContext("2d");
+        x.clearRect(0, 0, c.width, c.height);
+        x.strokeStyle = "#c8181d";
+        x.lineWidth = 18;
+        x.strokeRect(18, 18, 464, 464);
+        x.fillStyle = "#c8181d";
+        x.textAlign = "center";
+        x.textBaseline = "middle";
+        x.font = "400 190px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
+        x.fillText(n[0], 250, 145);
+        x.font = "400 175px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
+        x.fillText(n[1], 140, 360);
+        x.fillText(n[2], 360, 360);
+        x.fillStyle = "#111";
+        x.font = "30px BiauKai, DFKai-SB, 標楷體, KaiTi, STKaiti, serif";
+        x.fillText("核章日期：" + date, 250, 555);
+      }
+      function caseFileField(t) {
+        return {
+          application: "application",
+          application_deputy: "applicationDeputy",
+          application_director: "applicationDirector",
+          application_supervisor: "applicationReview",
+          closure: "closure",
+          closure_deputy: "closureDeputy",
+          closure_director: "closureDirector",
+          closure_supervisor: "closureReview",
+        }[t];
+      }
+      function caseFileUrl(id, t) {
+        const c = data.cases.find((x) => x.id === id) || {};
+        return c[caseFileField(t)] || "";
+      }
+      function openStamp(id, t, label) {
+        stampState = {
+          file: null,
+          bytes: null,
+          pdf: null,
+          page: 1,
+          pages: 0,
+          caseId: id,
+          type: t,
+          label: label,
+          oldUrl: caseFileUrl(id, t),
+          renderTask: null,
+        };
+        document.getElementById("stampTitle").textContent =
+          label + "｜選擇送出方式";
+        document.getElementById("stampFile").value = "";
+        document.getElementById("stampWorkspace").classList.add("hidden");
+        document.getElementById("stampDirectActions").classList.add("hidden");
+        document.getElementById("directReview").disabled = false;
+        document.getElementById("stampModal").classList.remove("hidden");
+        setMsg("stampMsg", "請選擇核定版檔案");
+      }
+      function closeStamp() {
+        document.getElementById("stampModal").classList.add("hidden");
+        document.getElementById("stampFile").value = "";
+        document.getElementById("stampWorkspace").classList.add("hidden");
+        document.getElementById("stampDirectActions").classList.add("hidden");
+        setMsg("stampMsg", "");
+        if (stampState.pdf && stampState.pdf.destroy)
+          try {
+            stampState.pdf.destroy();
+          } catch (e) {}
+        stampState = {
+          file: null,
+          bytes: null,
+          pdf: null,
+          page: 1,
+          pages: 0,
+          caseId: "",
+          type: "",
+          label: "",
+          oldUrl: "",
+          renderTask: null,
+        };
+      }
+      document
+        .getElementById("stampFile")
+        .addEventListener("change", async (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          document.getElementById("stampWorkspace").classList.add("hidden");
+          document.getElementById("stampDirectActions").classList.add("hidden");
+          if (f.size > 8 * 1024 * 1024) {
+            stampState.file = null;
+            stampState.bytes = null;
+            return setMsg("stampMsg", "檔案不可超過8MB", true);
+          }
+          if (stampState.pdf && stampState.pdf.destroy)
+            try {
+              stampState.pdf.destroy();
+            } catch (x) {}
+          stampState.pdf = null;
+          stampState.file = f;
+          stampState.bytes = await f.arrayBuffer();
+          document
+            .getElementById("stampDirectActions")
+            .classList.remove("hidden");
+          const isPdf = /\.pdf$/i.test(f.name) || f.type === "application/pdf";
+          if (!isPdf)
+            return setMsg(
+              "stampMsg",
+              "這個格式無法自動核章，可以使用「不核章直接送出」。",
+            );
+          if (!window.pdfjsLib || !window.PDFLib)
+            return setMsg(
+              "stampMsg",
+              "PDF核章元件未載入，但仍可使用「不核章直接送出」。",
+              true,
+            );
+          try {
+            drawStampPreview();
+          } catch (x) {
+            return setMsg(
+              "stampMsg",
+              x.message + "；仍可選擇不核章直接送出。",
+              true,
+            );
+          }
+          setMsg("stampMsg", "正在載入PDF…");
+          try {
+            stampState.pdf = await pdfjsLib.getDocument({
+              data: new Uint8Array(stampState.bytes.slice(0)),
+            }).promise;
+            stampState.pages = stampState.pdf.numPages;
+            stampState.page = stampState.pages;
+            document
+              .getElementById("stampWorkspace")
+              .classList.remove("hidden");
+            await renderStampPage();
+            setMsg(
+              "stampMsg",
+              "可拖曳印章定位後核章送出，或選擇不核章直接送出。",
+            );
+          } catch (x) {
+            document.getElementById("stampWorkspace").classList.add("hidden");
+            setMsg(
+              "stampMsg",
+              "PDF無法預覽，但仍可不核章直接送出：" + x.message,
+              true,
+            );
+          }
+        });
+      async function renderStampPage() {
+        if (!stampState.pdf) return;
+        const page = await stampState.pdf.getPage(stampState.page),
+          base = page.getViewport({ scale: 1 }),
+          scale = Math.min(1.45, 850 / base.width),
+          view = page.getViewport({ scale }),
+          c = document.getElementById("pdfCanvas"),
+          ctx = c.getContext("2d");
+        c.width = Math.floor(view.width);
+        c.height = Math.floor(view.height);
+        if (stampState.renderTask)
+          try {
+            stampState.renderTask.cancel();
+          } catch (e) {}
+        stampState.renderTask = page.render({
+          canvasContext: ctx,
+          viewport: view,
+        });
+        await stampState.renderTask.promise;
+        document.getElementById("stampPageLabel").textContent =
+          `第 ${stampState.page} 頁／共 ${stampState.pages} 頁`;
+        requestAnimationFrame(() => {
+          const s = document.getElementById("stampPreview"),
+            stage = document.getElementById("pdfStage");
+          s.style.left =
+            Math.max(10, stage.clientWidth - s.offsetWidth - 24) + "px";
+          s.style.top =
+            Math.max(10, stage.clientHeight - s.offsetHeight - 24) + "px";
+          clampStamp();
+        });
+      }
+      function changeStampPage(d) {
+        if (!stampState.pdf) return;
+        const p = Math.max(1, Math.min(stampState.pages, stampState.page + d));
+        if (p !== stampState.page) {
+          stampState.page = p;
+          renderStampPage();
+        }
+      }
+      function clampStamp() {
+        const s = document.getElementById("stampPreview"),
+          stage = document.getElementById("pdfStage"),
+          left = Math.max(
+            0,
+            Math.min(
+              parseFloat(s.style.left) || 0,
+              stage.clientWidth - s.offsetWidth,
+            ),
+          ),
+          top = Math.max(
+            0,
+            Math.min(
+              parseFloat(s.style.top) || 0,
+              stage.clientHeight - s.offsetHeight,
+            ),
+          );
+        s.style.left = left + "px";
+        s.style.top = top + "px";
+      }
+      document.getElementById("stampSize").addEventListener("input", (e) => {
+        document.getElementById("stampPreview").style.width =
+          e.target.value + "px";
+        clampStamp();
+      });
+      (() => {
+        const s = document.getElementById("stampPreview");
+        let drag = null;
+        s.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          drag = {
+            x: e.clientX,
+            y: e.clientY,
+            left: s.offsetLeft,
+            top: s.offsetTop,
+          };
+          s.setPointerCapture(e.pointerId);
+        });
+        s.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          s.style.left = drag.left + e.clientX - drag.x + "px";
+          s.style.top = drag.top + e.clientY - drag.y + "px";
+          clampStamp();
+        });
+        const stop = () => (drag = null);
+        s.addEventListener("pointerup", stop);
+        s.addEventListener("pointercancel", stop);
+      })();
+      async function submitReviewDirect() {
+        if (!stampState.file)
+          return setMsg("stampMsg", "請先選擇核定版檔案", true);
+        const btn = document.getElementById("directReview");
+        btn.disabled = true;
+        setMsg("stampMsg", "正在準備檔案…");
+        try {
+          const form = document.getElementById("uploadForm"),
+            oldUrl = stampState.oldUrl;
+          prepareUploadFields(stampState.caseId, stampState.type);
+          document.getElementById("uploadName").value = stampState.file.name;
+          document.getElementById("uploadMime").value =
+            stampState.file.type || "application/octet-stream";
+          document.getElementById("uploadData").value = await base64(
+            stampState.file,
+          );
+          document.getElementById("uploadStampName").value = "";
+          document.getElementById("uploadStampDate").value = "";
+          document.getElementById("uploadStampPage").value = "";
+          document.getElementById("uploadStamped").value = "";
+          document.getElementById("uploadSkipPreApproval").value = "";
+          form.submit();
+          setMsg("stampMsg", "已送出，後台正在儲存…");
+          pollUpload(stampState.caseId, stampState.type, oldUrl);
+        } catch (x) {
+          setMsg("stampMsg", x.message, true);
+          btn.disabled = false;
+        }
+      }
+      async function confirmPdfStamp() {
+        if (!stampState.pdf || !stampState.bytes)
+          return setMsg("stampMsg", "請先選擇並載入PDF", true);
+        const btn = document.getElementById("confirmStamp");
+        btn.disabled = true;
+        setMsg("stampMsg", "正在製作核章PDF…");
+        try {
+          const pdf = await PDFLib.PDFDocument.load(stampState.bytes.slice(0)),
+            page = pdf.getPages()[stampState.page - 1],
+            img = await pdf.embedPng(
+              document.getElementById("stampPreview").toDataURL("image/png"),
+            ),
+            pc = document.getElementById("pdfCanvas").getBoundingClientRect(),
+            sc = document
+              .getElementById("stampPreview")
+              .getBoundingClientRect(),
+            pw = page.getWidth(),
+            ph = page.getHeight(),
+            x = ((sc.left - pc.left) / pc.width) * pw,
+            y = ph - ((sc.bottom - pc.top) / pc.height) * ph,
+            w = (sc.width / pc.width) * pw,
+            h = (sc.height / pc.height) * ph;
+          page.drawImage(img, { x, y, width: w, height: h });
+          const out = await pdf.save({ useObjectStreams: true });
+          if (out.length > 8 * 1024 * 1024)
+            throw new Error("核章後PDF超過8MB，請先壓縮原始PDF");
+          const stampName = validStampName(),
+            stampDate = rocStampDate(),
+            baseName = stampState.file.name.replace(/\.pdf$/i, ""),
+            form = document.getElementById("uploadForm"),
+            oldUrl = stampState.oldUrl;
+          prepareUploadFields(stampState.caseId, stampState.type);
+          document.getElementById("uploadName").value =
+            baseName + "_已核章.pdf";
+          document.getElementById("uploadMime").value = "application/pdf";
+          document.getElementById("uploadData").value = await base64(
+            new Blob([out], { type: "application/pdf" }),
+          );
+          document.getElementById("uploadStampName").value = stampName;
+          document.getElementById("uploadStampDate").value = stampDate;
+          document.getElementById("uploadStampPage").value = stampState.page;
+          document.getElementById("uploadStamped").value = "1";
+          document.getElementById("uploadSkipPreApproval").value = "";
+          form.submit();
+          setMsg("stampMsg", "已送出，後台正在儲存…");
+          pollUpload(stampState.caseId, stampState.type, oldUrl);
+        } catch (x) {
+          setMsg("stampMsg", x.message, true);
+        } finally {
+          btn.disabled = false;
+        }
+      }
+      function openEdit(id) {
+        const c = data.cases.find((x) => x.id === id);
+        document.getElementById("editCaseId").value = id;
+        document.getElementById("editTitle").value = c.title;
+        document.getElementById("editModal").classList.remove("hidden");
+      }
+      function closeEdit() {
+        document.getElementById("editModal").classList.add("hidden");
+      }
+      async function saveCaseEdit(e) {
+        e.preventDefault();
+        try {
+          data = await api("editCase", {
+            caseId: v("editCaseId"),
+            title: v("editTitle"),
+          });
+          closeEdit();
+          render();
+        } catch (x) {
+          setMsg("editMsg", x.message, true);
+        }
+      }
+      async function deleteCase(id) {
+        if (!confirm("確定刪除這個案件？案件資料夾會移至Google Drive垃圾桶。"))
+          return;
+        try {
+          data = await api("deleteCase", { caseId: id });
+          render();
+        } catch (x) {
+          alert(x.message);
+        }
+      }
+      document.getElementById("uploadForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = document.getElementById("filePicker").files[0];
+        if (!f) return;
+        if (f.size > 8 * 1024 * 1024)
+          return setMsg("uploadMsg", "檔案不可超過8MB", true);
+        setMsg("uploadMsg", "正在上傳…");
+        document.getElementById("uploadName").value = f.name;
+        document.getElementById("uploadMime").value =
+          f.type || "application/octet-stream";
+        document.getElementById("uploadData").value = await base64(f);
+        document.getElementById("uploadStampName").value = "";
+        document.getElementById("uploadStampDate").value = "";
+        document.getElementById("uploadStampPage").value = "";
+        document.getElementById("uploadStamped").value = "";
+        document.getElementById("uploadSkipPreApproval").value =
+          document.getElementById("skipPreApproval").checked ? "1" : "";
+        const id = document.getElementById("uploadCase").value,
+          type = document.getElementById("uploadType").value,
+          oldUrl = caseFileUrl(id, type);
+        e.target.submit();
+        pollUpload(id, type, oldUrl);
+      };
+      async function pollUpload(id, type, oldUrl = "") {
+        const field = caseFileField(type);
+        for (let i = 0; i < 15; i++) {
+          await new Promise((r) => setTimeout(r, 2500));
+          try {
+            const d = await api("dashboard"),
+              c = d.cases.find((x) => x.id === id);
+            if (c && c[field] && (!oldUrl || c[field] !== oldUrl)) {
+              data = d;
+              closeUpload();
+              closeStamp();
+              render();
+              return;
+            }
+          } catch (e) {}
+        }
+        const target = isReviewType(type) ? "stampMsg" : "uploadMsg";
+        setMsg(target, "後台仍在處理，請重新整理頁面確認", true);
+      }
+      window.addEventListener("message", async (e) => {
+        if (
+          e.origin !== "https://script.google.com" &&
+          !e.origin.endsWith("-script.googleusercontent.com")
+        )
+          return;
+        if (e.data && e.data.ok) {
+          closeUpload();
+          closeStamp();
+          data = await api("dashboard");
+          render();
+        } else if (e.data) {
+          const target = isReviewType(
+            document.getElementById("uploadType").value,
+          )
+            ? "stampMsg"
+            : "uploadMsg";
+          setMsg(target, e.data.error || "上傳失敗", true);
+        }
+      });
+      async function saveUser(e) {
+        e.preventDefault();
+        try {
+          data = await api("saveUser", {
+            email: v("email"),
+            name: v("name"),
+            role: v("role"),
+            status: v("status"),
+          });
+          e.target.reset();
+          render();
+          setMsg("adminMsg", "已更新");
+        } catch (x) {
+          setMsg("adminMsg", x.message, true);
+        }
+      }
+      function renderUsers() {
+        document.getElementById("userRows").innerHTML = (data.users || [])
+          .map(
+            (u) =>
+              `<tr><td>${esc(u.name) || "—"}</td><td>${esc(u.email)}</td><td><span class="badge">${roleName(u.role)}</span></td><td>${u.status === "active" ? "啟用" : "停用"}</td><td><button class="ghost" onclick="editUser('${u.email}')">編輯</button>${u.email !== "hty0814ex@gmail.com" ? ` <button class="danger" onclick="deleteUser('${u.email}')">刪除</button>` : ""}</td></tr>`,
+          )
+          .join("");
+      }
+      async function deleteUser(email) {
+        const user = (data.users || []).find((u) => u.email === email) || {};
+        if (
+          !confirm(
+            `確定將「${user.name || email}」從白名單刪除？\n該帳號會立即失去登入與檔案存取權限。`,
+          )
+        )
+          return;
+        setMsg("adminMsg", "正在刪除…");
+        try {
+          data = await api("deleteUser", { email });
+          render();
+          setMsg("adminMsg", "已刪除白名單帳號");
+        } catch (x) {
+          setMsg("adminMsg", x.message, true);
+        }
+      }
+      function editUser(e) {
+        const u = data.users.find((x) => x.email === e);
+        ["email", "name", "role", "status"].forEach(
+          (k) => (document.getElementById(k).value = u[k]),
+        );
+      }
+      function showTab(n, b) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((x) => x.classList.remove("on"));
+        b.classList.add("on");
+        ["cases", "new", "admin"].forEach((x) =>
+          document
+            .getElementById(x + "Panel")
+            .classList.toggle("hidden", x !== n),
+        );
+      }
+      async function logout() {
+        const old = token;
+        localStorage.removeItem("workAuthToken");
+        token = "";
+        try {
+          token = old;
+          await api("logout");
+        } catch (e) {}
+        token = "";
+        location.reload();
+      }
+      function v(i) {
+        return document.getElementById(i).value.trim();
+      }
+      function setMsg(i, m, e = false) {
+        const x = document.getElementById(i);
+        x.textContent = m;
+        x.className = "msg" + (e ? " error" : "");
+      }
+      function base64(f) {
+        return new Promise((ok, no) => {
+          const r = new FileReader();
+          r.onload = () => ok(r.result.split(",")[1]);
+          r.onerror = no;
+          r.readAsDataURL(f);
+        });
+      }
+      function roleName(r) {
+        return (
+          {
+            social: "社資",
+            deputy: "副組長",
+            director: "院長",
+            supervisor: "督導",
+            admin: "管理員",
+            staff: "社資",
+            manager: "督導",
+          }[r] || r
+        );
+      }
+      function statusName(s) {
+        return (
+          {
+            draft: "待上傳申請書",
+            application_pending: "申請待督導審核",
+            application_pending_deputy: "申請待副組長審核",
+            application_pending_director: "申請待院長審核",
+            application_pending_supervisor: "申請待督導審核",
+            approved: "執行中",
+            closure_pending: "結案待督導審核",
+            closure_pending_deputy: "結案待副組長審核",
+            closure_pending_director: "結案待院長審核",
+            closure_pending_supervisor: "結案待督導審核",
+            closed: "已結案",
+          }[s] || s
+        );
+      }
+      function esc(s) {
+        return String(s || "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            })[c],
+        );
+      }
+      function setDefaultYear() {
+        document.getElementById("caseYear").value =
+          new Date().getFullYear() - 1911;
+      }
+      setDefaultYear();
+    </script>
+  </body>
+</html>
