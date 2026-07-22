@@ -323,6 +323,26 @@
         gap: 10px;
         margin: 15px 0 5px;
       }
+      .register-form {
+        display: grid;
+        gap: 12px;
+        margin: 20px 0 8px;
+        text-align: left;
+      }
+      .register-form label {
+        display: grid;
+        gap: 6px;
+        color: var(--green2);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .register-form input[readonly] {
+        background: #f2f6f3;
+        color: var(--muted);
+      }
+      .register-form .field-note {
+        margin: -2px 0 2px;
+      }
       .field-note {
         font-size: 12px;
         color: var(--muted);
@@ -581,7 +601,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.3</span>
+          <span class="version">v5.4</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -590,7 +610,7 @@
       <section id="login" class="card login">
         <h1>Google 帳號登入</h1>
         <p class="sub">
-          工作申請、主管審核與結案資料集中管理。<br />登入後將在這台裝置保留30天。
+          工作申請、主管審核與結案資料集中管理。<br />登入後將在這台裝置保留30天；首次使用可直接提出註冊申請。
         </p>
         <div id="autoLogin" class="msg hidden">
           <span class="loading"
@@ -599,6 +619,41 @@
         </div>
         <div id="googleButton"></div>
         <p id="loginMsg" class="msg"></p>
+      </section>
+      <section id="register" class="card login hidden">
+        <div class="eyebrow">ACCOUNT REQUEST</div>
+        <h1>申請平台帳號</h1>
+        <p class="sub">
+          Google 帳號已完成驗證。請填寫姓名與職種，送出後由管理員審核啟用。
+        </p>
+        <form class="register-form" onsubmit="submitRegistration(event)">
+          <label
+            >Google 帳號<input id="registerEmail" type="email" readonly
+          /></label>
+          <label
+            >姓名<input
+              id="registerName"
+              maxlength="30"
+              placeholder="請輸入姓名"
+              required
+          /></label>
+          <label
+            >職種<select id="registerRole" required>
+              <option value="social">社資</option>
+              <option value="deputy">副組長</option>
+              <option value="director">院長</option>
+              <option value="supervisor">督導</option>
+            </select></label
+          >
+          <p class="field-note">
+            若需要使用電子核章，姓名請填三個中文字，並與實際姓名一致。
+          </p>
+          <button id="registerSubmit" class="primary">送出註冊申請</button>
+        </form>
+        <p id="registerMsg" class="msg"></p>
+        <button type="button" class="ghost" onclick="backToLogin()">
+          返回登入／切換 Google 帳號
+        </button>
       </section>
       <section id="app" class="hidden">
         <div class="toolbar">
@@ -658,7 +713,7 @@
           <div class="eyebrow">ACCESS CONTROL</div>
           <h2 style="margin: 3px 0 8px">白名單、姓名與職位管理</h2>
           <p class="field-note">
-            職位決定審核順序；需要PDF核章的人員，姓名必須設定為三個中文字。
+            待審核的註冊申請會顯示在下方；確認姓名與職種後再啟用。需要PDF核章的人員，姓名必須設定為三個中文字。
           </p>
           <form class="admin-form" onsubmit="saveUser(event)">
             <input
@@ -680,6 +735,7 @@
               <option value="admin">管理員</option></select
             ><select id="status" aria-label="狀態">
               <option value="active">啟用</option>
+              <option value="pending">待審核</option>
               <option value="disabled">停用</option></select
             ><button class="primary">儲存人員</button>
           </form>
@@ -842,8 +898,9 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
-        FRONT_VERSION = "5.3.0";
+        FRONT_VERSION = "5.4.0";
       let token = localStorage.getItem("workAuthToken") || "",
+        registrationIdToken = "",
         data = { user: {}, cases: [], users: [] };
       if (window.pdfjsLib)
         pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -892,13 +949,83 @@
       async function googleLogin(r) {
         setMsg("loginMsg", "正在登入…");
         try {
+          registrationIdToken = r.credential;
           const x = await api("login", { idToken: r.credential });
+          if (x.registrationRequired || x.registrationPending) {
+            showRegistration(x);
+            return;
+          }
           token = x.authToken;
           localStorage.setItem("workAuthToken", token);
+          registrationIdToken = "";
           load();
         } catch (e) {
           setMsg("loginMsg", e.message, true);
         }
+      }
+      function showRegistration(x) {
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("app").classList.add("hidden");
+        document.getElementById("register").classList.remove("hidden");
+        document.getElementById("registerEmail").value = x.email || "";
+        document.getElementById("registerName").value = x.name || "";
+        if (["social", "deputy", "director", "supervisor"].includes(x.role))
+          document.getElementById("registerRole").value = x.role;
+        document.getElementById("registerSubmit").textContent =
+          x.registrationPending ? "更新註冊資料" : "送出註冊申請";
+        document.getElementById("who").textContent =
+          (x.name || x.email) + "｜待管理員啟用";
+        setMsg(
+          "registerMsg",
+          x.registrationPending
+            ? "申請已送出，尚待管理員啟用；啟用前仍可修改姓名或職種。"
+            : "",
+        );
+      }
+      async function submitRegistration(e) {
+        e.preventDefault();
+        if (!registrationIdToken) {
+          setMsg("registerMsg", "Google 驗證已失效，請返回重新登入", true);
+          return;
+        }
+        const button = document.getElementById("registerSubmit");
+        button.disabled = true;
+        setMsg("registerMsg", "正在送出申請…");
+        try {
+          const x = await api("register", {
+            idToken: registrationIdToken,
+            name: v("registerName"),
+            role: v("registerRole"),
+          });
+          if (x.alreadyActive) {
+            const loggedIn = await api("login", {
+              idToken: registrationIdToken,
+            });
+            token = loggedIn.authToken;
+            localStorage.setItem("workAuthToken", token);
+            registrationIdToken = "";
+            await load();
+            return;
+          }
+          showRegistration(x);
+          setMsg("registerMsg", "註冊資料已送出，請等待管理員啟用。");
+        } catch (x) {
+          setMsg("registerMsg", x.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+      function backToLogin() {
+        registrationIdToken = "";
+        document.getElementById("register").classList.add("hidden");
+        document.getElementById("app").classList.add("hidden");
+        document.getElementById("login").classList.remove("hidden");
+        document.getElementById("googleButton").classList.remove("hidden");
+        document.getElementById("autoLogin").classList.add("hidden");
+        document.getElementById("who").textContent = "尚未登入";
+        setMsg("loginMsg", "請選擇要使用的 Google 帳號");
+        if (google.accounts.id.disableAutoSelect)
+          google.accounts.id.disableAutoSelect();
       }
       function api(action, p = {}) {
         return new Promise((ok, no) => {
@@ -928,6 +1055,7 @@
           data = await api("dashboard");
           document.getElementById("autoLogin").classList.add("hidden");
           document.getElementById("login").classList.add("hidden");
+          document.getElementById("register").classList.add("hidden");
           document.getElementById("app").classList.remove("hidden");
           const role = String(data.user.role || "")
             .trim()
@@ -964,6 +1092,12 @@
           ).length,
           active = data.cases.filter((c) => c.status === "approved").length,
           closed = data.cases.filter((c) => c.status === "closed").length;
+        const pendingRegistrations = (data.users || []).filter(
+          (u) => u.status === "pending",
+        ).length;
+        document.getElementById("adminTab").textContent = pendingRegistrations
+          ? `人員與權限（${pendingRegistrations} 待審核）`
+          : "人員與權限";
         document.getElementById("summary").textContent =
           `共 ${data.cases.length} 件案件，${unread} 件需要留意`;
         document.getElementById("stats").innerHTML =
@@ -1665,12 +1799,50 @@
         }
       }
       function renderUsers() {
-        document.getElementById("userRows").innerHTML = (data.users || [])
+        const users = [...(data.users || [])].sort(
+          (a, b) =>
+            Number(b.status === "pending") - Number(a.status === "pending"),
+        );
+        document.getElementById("userRows").innerHTML = users
           .map(
-            (u) =>
-              `<tr><td>${esc(u.name) || "—"}</td><td>${esc(u.email)}</td><td><span class="badge">${roleName(u.role)}</span></td><td>${u.status === "active" ? "啟用" : "停用"}</td><td><button class="ghost" onclick="editUser('${u.email}')">編輯</button>${u.email !== "hty0814ex@gmail.com" ? ` <button class="danger" onclick="deleteUser('${u.email}')">刪除</button>` : ""}</td></tr>`,
+            (u) => {
+              const status =
+                u.status === "active"
+                  ? "啟用"
+                  : u.status === "pending"
+                    ? "待審核"
+                    : "停用";
+              const activate =
+                u.status === "pending"
+                  ? `<button class="primary" onclick="activateUser('${u.email}')">審核啟用</button> `
+                  : "";
+              return `<tr><td>${esc(u.name) || "—"}</td><td>${esc(u.email)}</td><td><span class="badge">${roleName(u.role)}</span></td><td>${status}</td><td>${activate}<button class="ghost" onclick="editUser('${u.email}')">編輯</button>${u.email !== "hty0814ex@gmail.com" ? ` <button class="danger" onclick="deleteUser('${u.email}')">刪除</button>` : ""}</td></tr>`;
+            },
           )
           .join("");
+      }
+      async function activateUser(email) {
+        const u = (data.users || []).find((x) => x.email === email);
+        if (!u) return;
+        if (
+          !confirm(
+            `確認啟用「${u.name || u.email}」？\n職種：${roleName(u.role)}\n啟用後即可登入並存取平台案件。`,
+          )
+        )
+          return;
+        setMsg("adminMsg", "正在啟用帳號與設定檔案權限…");
+        try {
+          data = await api("saveUser", {
+            email: u.email,
+            name: u.name,
+            role: u.role,
+            status: "active",
+          });
+          render();
+          setMsg("adminMsg", "帳號已啟用，系統已寄出登入通知。");
+        } catch (x) {
+          setMsg("adminMsg", x.message, true);
+        }
       }
       async function deleteUser(email) {
         const user = (data.users || []).find((u) => u.email === email) || {};
