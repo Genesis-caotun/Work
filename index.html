@@ -601,7 +601,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.4.2</span>
+          <span class="version">v5.5</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -808,7 +808,7 @@
       <div class="card">
         <div class="eyebrow">PDF APPROVAL STAMP</div>
         <h2 id="stampTitle">主管核定並蓋章</h2>
-        <p class="stamp-note">
+        <p id="stampNote" class="stamp-note">
           建議直接沿用上一關版本並疊加電子章；也可以另選檔案。PDF可定位核章，其他格式可直接送出。
         </p>
         <div class="actions">
@@ -823,6 +823,12 @@
         </div>
         <p class="sub">或從裝置重新選擇一份檔案：</p>
         <input id="stampFile" type="file" />
+        <label id="stampSkipWrap" class="checkline hidden"
+          ><input id="stampSkipPreApproval" type="checkbox" />
+          <span id="stampSkipText"
+            >這份文件已經由副組長及院長核章，送出後直接交由督導審核</span
+          ></label
+        >
         <p id="stampMsg" class="msg"></p>
         <div id="stampDirectActions" class="actions hidden">
           <button
@@ -869,7 +875,7 @@
               class="primary"
               onclick="confirmPdfStamp()"
             >
-              確認核定並蓋章</button
+              確認蓋章並送出</button
             ><button type="button" class="ghost" onclick="closeStamp()">
               取消
             </button>
@@ -898,7 +904,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
-        FRONT_VERSION = "5.4.2",
+        FRONT_VERSION = "5.5.0",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
@@ -1280,8 +1286,17 @@
       function isReviewType(t) {
         return /_(deputy|director|supervisor)$/.test(String(t || ""));
       }
+      function isOriginType(t) {
+        return ["application", "closure"].includes(String(t || ""));
+      }
+      function canSelfStamp(t) {
+        return (
+          isOriginType(t) && ["social", "deputy"].includes(data.user.role)
+        );
+      }
       function openUpload(id, t, label) {
-        if (isReviewType(t)) return openStamp(id, t, label);
+        if (isReviewType(t) || canSelfStamp(t))
+          return openStamp(id, t, label);
         document.getElementById("uploadModal").classList.remove("hidden");
         document.getElementById("uploadTitle").textContent = label;
         prepareUploadFields(id, t);
@@ -1394,6 +1409,13 @@
         return c[caseFileField(t)] || "";
       }
       function openStamp(id, t, label) {
+        const original = isOriginType(t),
+          c = data.cases.find((x) => x.id === id) || {},
+          canSkip =
+            original &&
+            ["social", "deputy"].includes(data.user.role) &&
+            !caseFileUrl(id, t) &&
+            c.applicantRole === data.user.role;
         stampState = {
           file: null,
           bytes: null,
@@ -1409,19 +1431,43 @@
         };
         document.getElementById("stampTitle").textContent =
           label + "｜選擇送出方式";
+        document.getElementById("stampNote").textContent = original
+          ? "PDF可選擇線上定位蓋章後送出，也可以不蓋章直接送出；Word、Excel及其他格式可直接送出。"
+          : "建議直接沿用上一關版本並疊加電子章；也可以另選檔案。PDF可定位核章，其他格式可直接送出。";
         document.getElementById("stampFile").value = "";
         document.getElementById("stampWorkspace").classList.add("hidden");
         document.getElementById("stampDirectActions").classList.add("hidden");
         document.getElementById("directReview").disabled = false;
         document.getElementById("usePrevious").disabled = false;
+        document
+          .getElementById("usePrevious")
+          .classList.toggle("hidden", original);
+        document.getElementById("stampSkipText").textContent =
+          c.applicantRole === "deputy"
+            ? "這份文件已經由院長核章，送出後直接交由督導審核"
+            : "這份文件已經由副組長及院長核章，送出後直接交由督導審核";
+        document
+          .getElementById("stampSkipWrap")
+          .classList.toggle("hidden", !canSkip);
+        document.getElementById("stampSkipPreApproval").checked = false;
+        document.getElementById("confirmStamp").textContent = original
+          ? "確認蓋章並送出"
+          : "確認核定並蓋章";
         document.getElementById("stampModal").classList.remove("hidden");
-        setMsg("stampMsg", "可直接載入上一關版本，不必先下載再重新上傳。");
+        setMsg(
+          "stampMsg",
+          original
+            ? "請選擇要送出的檔案；PDF載入後可以調整電子章位置。"
+            : "可直接載入上一關版本，不必先下載再重新上傳。",
+        );
       }
       function closeStamp() {
         document.getElementById("stampModal").classList.add("hidden");
         document.getElementById("stampFile").value = "";
         document.getElementById("stampWorkspace").classList.add("hidden");
         document.getElementById("stampDirectActions").classList.add("hidden");
+        document.getElementById("stampSkipWrap").classList.add("hidden");
+        document.getElementById("stampSkipPreApproval").checked = false;
         setMsg("stampMsg", "");
         if (stampState.pdf && stampState.pdf.destroy)
           try {
@@ -1626,7 +1672,7 @@
       })();
       async function submitReviewDirect() {
         if (!stampState.file)
-          return setMsg("stampMsg", "請先選擇核定版檔案", true);
+          return setMsg("stampMsg", "請先選擇要送出的檔案", true);
         const btn = document.getElementById("directReview");
         btn.disabled = true;
         setMsg("stampMsg", "正在準備檔案…");
@@ -1644,7 +1690,11 @@
           document.getElementById("uploadStampDate").value = "";
           document.getElementById("uploadStampPage").value = "";
           document.getElementById("uploadStamped").value = "";
-          document.getElementById("uploadSkipPreApproval").value = "";
+          document.getElementById("uploadSkipPreApproval").value =
+            isOriginType(stampState.type) &&
+            document.getElementById("stampSkipPreApproval").checked
+              ? "1"
+              : "";
           await sendUploadRequest();
           setMsg("stampMsg", "已送出，後台正在儲存…");
           pollUpload(stampState.caseId, stampState.type, oldUrl);
@@ -1695,7 +1745,11 @@
           document.getElementById("uploadStampDate").value = stampDate;
           document.getElementById("uploadStampPage").value = stampState.page;
           document.getElementById("uploadStamped").value = "1";
-          document.getElementById("uploadSkipPreApproval").value = "";
+          document.getElementById("uploadSkipPreApproval").value =
+            isOriginType(stampState.type) &&
+            document.getElementById("stampSkipPreApproval").checked
+              ? "1"
+              : "";
           await sendUploadRequest();
           setMsg("stampMsg", "已送出，後台正在儲存…");
           pollUpload(stampState.caseId, stampState.type, oldUrl);
