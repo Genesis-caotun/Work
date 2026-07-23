@@ -601,7 +601,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.5.1</span>
+          <span class="version">v5.5.2</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -908,7 +908,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbwODSs_JQczMsOH6KoFvSvzcCtb25LFA9iQ27ioymy54w5hiAuKyct3uyTzuxUyVnsfmg/exec",
-        FRONT_VERSION = "5.5.1",
+        FRONT_VERSION = "5.5.2",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
@@ -928,7 +928,8 @@
         oldUrl: "",
         sourceLabel: "",
         renderTask: null,
-      };
+      },
+        pendingUploadRequest = null;
       const savedStampSize = Number(localStorage.getItem("workStampSize"));
       if (savedStampSize >= 45 && savedStampSize <= 230) {
         document.getElementById("stampSize").value = savedStampSize;
@@ -1333,7 +1334,20 @@
         document.getElementById("skipWrap").classList.add("hidden");
         setMsg("uploadMsg", "");
       }
-      async function sendUploadRequest() {
+      function sendUploadRequest() {
+        if (pendingUploadRequest)
+          return Promise.reject(new Error("上一個檔案仍在傳送中"));
+        const encoded = document.getElementById("uploadData").value,
+          padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0,
+          decodedBytes = Math.floor((encoded.length * 3) / 4) - padding;
+        if (!encoded || decodedBytes <= 0)
+          return Promise.reject(
+            new Error("瀏覽器沒有產生完整的檔案內容，請重新選擇檔案"),
+          );
+        if (decodedBytes > MAX_FILE_BYTES)
+          return Promise.reject(
+            new Error("核章後的實際檔案超過20MB，請先壓縮PDF"),
+          );
         const random =
             window.crypto && crypto.randomUUID
               ? crypto.randomUUID()
@@ -1344,19 +1358,36 @@
             Date.now().toString(36) +
             "_" +
             random.replace(/[^a-zA-Z0-9_-]/g, ""),
-          form = document.getElementById("uploadForm"),
-          body = new URLSearchParams();
+          form = document.getElementById("uploadForm");
         document.getElementById("uploadRequestId").value = requestId;
-        new FormData(form).forEach((value, key) =>
-          body.append(key, String(value)),
-        );
-        await fetch(API, {
-          method: "POST",
-          mode: "no-cors",
-          credentials: "omit",
-          body,
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            if (
+              pendingUploadRequest &&
+              pendingUploadRequest.requestId === requestId
+            )
+              pendingUploadRequest = null;
+            reject(
+              new Error(
+                "後台在90秒內沒有回覆。請到Apps Script執行項目查看這次doPost紀錄",
+              ),
+            );
+          }, 90000);
+          pendingUploadRequest = { requestId, resolve, reject, timer };
+          try {
+            form.submit();
+          } catch (x) {
+            clearTimeout(timer);
+            pendingUploadRequest = null;
+            reject(x);
+          }
         });
-        return requestId;
+      }
+      async function finishUpload() {
+        data = await api("dashboard");
+        closeUpload();
+        closeStamp();
+        render();
       }
       function validStampName() {
         const n = String(data.user.name || "").replace(/\s/g, "");
@@ -1694,8 +1725,6 @@
         btn.disabled = true;
         setMsg("stampMsg", "正在準備檔案…");
         try {
-          const form = document.getElementById("uploadForm"),
-            oldUrl = stampState.oldUrl;
           prepareUploadFields(stampState.caseId, stampState.type);
           document.getElementById("uploadName").value = stampState.file.name;
           document.getElementById("uploadMime").value =
@@ -1712,15 +1741,9 @@
             document.getElementById("stampSkipPreApproval").checked
               ? "1"
               : "";
-          const requestId = await sendUploadRequest();
-          setMsg("stampMsg", "已送出，後台正在儲存…");
-          pollUpload(
-            stampState.caseId,
-            stampState.type,
-            oldUrl,
-            btn,
-            requestId,
-          );
+          await sendUploadRequest();
+          setMsg("stampMsg", "檔案已儲存，正在更新案件…");
+          await finishUpload();
         } catch (x) {
           setMsg("stampMsg", x.message, true);
           btn.disabled = false;
@@ -1754,9 +1777,7 @@
             throw new Error("核章後PDF超過20MB，請先壓縮原始PDF");
           const stampName = validStampName(),
             stampDate = rocStampDate(),
-            baseName = stampState.file.name.replace(/\.pdf$/i, ""),
-            form = document.getElementById("uploadForm"),
-            oldUrl = stampState.oldUrl;
+            baseName = stampState.file.name.replace(/\.pdf$/i, "");
           prepareUploadFields(stampState.caseId, stampState.type);
           document.getElementById("uploadName").value =
             baseName + "_已核章.pdf";
@@ -1773,15 +1794,9 @@
             document.getElementById("stampSkipPreApproval").checked
               ? "1"
               : "";
-          const requestId = await sendUploadRequest();
-          setMsg("stampMsg", "已送出，後台正在儲存…");
-          pollUpload(
-            stampState.caseId,
-            stampState.type,
-            oldUrl,
-            btn,
-            requestId,
-          );
+          await sendUploadRequest();
+          setMsg("stampMsg", "檔案已儲存，正在更新案件…");
+          await finishUpload();
         } catch (x) {
           setMsg("stampMsg", x.message, true);
           btn.disabled = false;
@@ -1839,107 +1854,30 @@
           document.getElementById("uploadStamped").value = "";
           document.getElementById("uploadSkipPreApproval").value =
             document.getElementById("skipPreApproval").checked ? "1" : "";
-          const id = document.getElementById("uploadCase").value,
-            type = document.getElementById("uploadType").value,
-            oldUrl = caseFileUrl(id, type);
           setMsg("uploadMsg", "正在傳送至後台…");
-          const requestId = await sendUploadRequest();
-          setMsg("uploadMsg", "檔案已送出，後台正在儲存…");
-          pollUpload(id, type, oldUrl, button, requestId);
+          await sendUploadRequest();
+          setMsg("uploadMsg", "檔案已儲存，正在更新案件…");
+          await finishUpload();
         } catch (x) {
           if (button) button.disabled = false;
           setMsg("uploadMsg", "傳送失敗：" + x.message, true);
         }
       };
-      async function pollUpload(
-        id,
-        type,
-        oldUrl = "",
-        button = null,
-        requestId = "",
-      ) {
-        const field = caseFileField(type),
-          target =
-            isReviewType(type) || canSelfStamp(type)
-              ? "stampMsg"
-              : "uploadMsg";
-        for (let i = 0; i < 20; i++) {
-          await new Promise((r) => setTimeout(r, 1500));
-          if (requestId) {
-            try {
-              const status = await api("uploadStatus", { requestId });
-              if (status.done) {
-                if (!status.result || !status.result.ok) {
-                  if (button) button.disabled = false;
-                  setMsg(
-                    target,
-                    (status.result && status.result.error) ||
-                      "上傳失敗，後台沒有提供錯誤原因",
-                    true,
-                  );
-                  return;
-                }
-                try {
-                  data = await api("dashboard");
-                  closeUpload();
-                  closeStamp();
-                  render();
-                } catch (x) {
-                  if (button) button.disabled = false;
-                  setMsg(
-                    target,
-                    "檔案已儲存，但畫面更新失敗，請重新整理頁面",
-                    true,
-                  );
-                }
-                return;
-              }
-            } catch (x) {
-              if (/登入|授權|停用/.test(String(x.message || ""))) {
-                if (button) button.disabled = false;
-                setMsg(target, x.message, true);
-                return;
-              }
-            }
-          }
-          try {
-            const d = await api("dashboard"),
-              c = d.cases.find((x) => x.id === id);
-            if (c && c[field] && (!oldUrl || c[field] !== oldUrl)) {
-              data = d;
-              closeUpload();
-              closeStamp();
-              render();
-              return;
-            }
-          } catch (e) {}
-        }
-        if (button) button.disabled = false;
-        setMsg(
-          target,
-          "30秒內未收到後台結果，請重新整理後再試一次",
-          true,
-        );
-      }
-      window.addEventListener("message", async (e) => {
+      window.addEventListener("message", (e) => {
         if (
           e.origin !== "https://script.google.com" &&
           !e.origin.endsWith("-script.googleusercontent.com")
         )
           return;
-        if (e.data && e.data.ok) {
-          closeUpload();
-          closeStamp();
-          data = await api("dashboard");
-          render();
-        } else if (e.data) {
-          const target = isReviewType(
-            document.getElementById("uploadType").value,
-          )
-            ? "stampMsg"
-            : "uploadMsg";
-          setMsg(target, e.data.error || "上傳失敗", true);
-        }
+        const response = e.data || {},
+          pending = pendingUploadRequest;
+        if (!pending || typeof response !== "object") return;
+        if (response.requestId && response.requestId !== pending.requestId)
+          return;
+        clearTimeout(pending.timer);
+        pendingUploadRequest = null;
+        if (response.ok) pending.resolve(response);
+        else pending.reject(new Error(response.error || "後台上傳失敗"));
       });
       async function saveUser(e) {
         e.preventDefault();
