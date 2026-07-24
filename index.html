@@ -601,7 +601,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.5.4</span>
+          <span class="version">v5.5.5</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -619,6 +619,13 @@
         </div>
         <div id="googleButton"></div>
         <p id="loginMsg" class="msg"></p>
+        <a
+          id="backendTestLink"
+          class="btn ghost hidden"
+          target="_blank"
+          rel="noopener"
+          >直接測試後台連線</a
+        >
       </section>
       <section id="register" class="card login hidden">
         <div class="eyebrow">ACCOUNT REQUEST</div>
@@ -908,7 +915,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbzyte_RQY_a7AcUkcwXJ52czzkOfwRKprFNs0uop9n5D0HI9Zim_BVIH3xc6lV5CMonGg/exec",
-        FRONT_VERSION = "5.5.4",
+        FRONT_VERSION = "5.5.5",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
@@ -938,6 +945,8 @@
       }
       window.onload = () => {
         document.getElementById("uploadForm").action = API;
+        document.getElementById("backendTestLink").href =
+          API + "?action=ping&callback=mobileTest";
         google.accounts.id.initialize({
           client_id: CLIENT,
           callback: googleLogin,
@@ -959,10 +968,18 @@
         } else {
           setMsg("loginMsg", "正在檢查後台連線…");
           api("ping")
-            .then(() =>
-              setMsg("loginMsg", "後台連線正常，請選擇 Google 帳號登入"),
-            )
-            .catch((x) => setMsg("loginMsg", x.message, true));
+            .then(() => {
+              document
+                .getElementById("backendTestLink")
+                .classList.add("hidden");
+              setMsg("loginMsg", "後台連線正常，請選擇 Google 帳號登入");
+            })
+            .catch((x) => {
+              document
+                .getElementById("backendTestLink")
+                .classList.remove("hidden");
+              setMsg("loginMsg", x.message, true);
+            });
         }
       };
       async function googleLogin(r) {
@@ -1049,8 +1066,20 @@
       function api(action, p = {}) {
         return new Promise((ok, no) => {
           const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6),
-            s = document.createElement("script");
-          let finished = false;
+            s = document.createElement("script"),
+            url =
+              API +
+              "?" +
+              new URLSearchParams({
+                ...p,
+                action,
+                authToken: token,
+                callback: cb,
+                _: Date.now(),
+              });
+          let finished = false,
+            fallbackStarted = false,
+            timer = 0;
           const cleanup = () => {
               clearTimeout(timer);
               delete window[cb];
@@ -1062,28 +1091,55 @@
               cleanup();
               no(Error(message));
             },
-            timer = setTimeout(
-              () => fail("後台連線逾時，請重新整理後再試"),
-              15000,
-            );
-          window[cb] = (r) => {
-            if (finished) return;
-            finished = true;
-            cleanup();
-            r.ok ? ok(r) : no(Error(r.error || "錯誤"));
-          };
-          s.onerror = () => fail("無法連接後台，請確認部署網址是否有效");
+            finish = (r) => {
+              if (finished) return;
+              finished = true;
+              cleanup();
+              r.ok ? ok(r) : no(Error(r.error || "錯誤"));
+            },
+            parseJsonp = (text) => {
+              const source = String(text || "").trim(),
+                prefix = cb + "(";
+              if (!source.startsWith(prefix) || !source.endsWith(")"))
+                throw Error("後台回覆格式不正確");
+              return JSON.parse(source.slice(prefix.length, -1));
+            },
+            startFetchFallback = () => {
+              if (finished || fallbackStarted) return;
+              fallbackStarted = true;
+              s.remove();
+              clearTimeout(timer);
+              timer = setTimeout(
+                () =>
+                  fail(
+                    "這台裝置無法連接 Google 後台，請點下方按鈕直接測試",
+                  ),
+                20000,
+              );
+              fetch(url, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                credentials: "omit",
+                redirect: "follow",
+              })
+                .then((response) => {
+                  if (!response.ok)
+                    throw Error("HTTP " + String(response.status));
+                  return response.text();
+                })
+                .then((text) => finish(parseJsonp(text)))
+                .catch(() =>
+                  fail(
+                    "這台裝置無法連接 Google 後台，請點下方按鈕直接測試",
+                  ),
+                );
+            };
+          window[cb] = finish;
+          s.onerror = startFetchFallback;
           s.async = true;
-          s.src =
-            API +
-            "?" +
-            new URLSearchParams({
-              ...p,
-              action,
-              authToken: token,
-              callback: cb,
-              _: Date.now(),
-            });
+          s.src = url;
+          timer = setTimeout(startFetchFallback, 15000);
           document.body.appendChild(s);
         });
       }
