@@ -243,6 +243,21 @@
         background: #e5e9e7;
         color: #52605b;
       }
+      .status.returned {
+        background: #fff0ef;
+        color: var(--red);
+      }
+      .return-info {
+        margin: 3px 0 11px;
+        padding: 10px 12px;
+        border-radius: 11px;
+        background: #fff6e8;
+        border-left: 4px solid #dc7633;
+        color: #704015;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
       .files {
         border-top: 1px solid var(--line);
         margin-top: 8px;
@@ -349,7 +364,8 @@
         margin: -4px 0 15px;
       }
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         border: 1px solid var(--line);
         border-radius: 11px;
@@ -360,9 +376,15 @@
         outline: none;
       }
       input:focus,
-      select:focus {
+      select:focus,
+      textarea:focus {
         border-color: #76a994;
         box-shadow: 0 0 0 3px rgba(118, 169, 148, 0.16);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 88px;
+        line-height: 1.55;
       }
       .msg {
         min-height: 22px;
@@ -432,6 +454,11 @@
         max-height: 96vh;
         overflow: auto;
       }
+      #returnModal .card {
+        width: min(980px, 100%);
+        max-height: 96vh;
+        overflow: auto;
+      }
       .stamp-tools {
         display: flex;
         gap: 8px;
@@ -458,11 +485,62 @@
         line-height: 0;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.18);
       }
-      #pdfCanvas {
+      #pdfCanvas,
+      #returnPdfCanvas {
         display: block;
         max-width: 100%;
         height: auto;
         background: #fff;
+      }
+      #returnPdfStage {
+        cursor: crosshair;
+      }
+      .return-note {
+        position: absolute;
+        z-index: 2;
+        cursor: move;
+        touch-action: none;
+        user-select: none;
+        line-height: 0;
+        filter: drop-shadow(0 2px 2px rgba(94, 36, 25, 0.17));
+      }
+      .return-note canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .return-note-delete {
+        position: absolute;
+        top: -12px;
+        right: -12px;
+        width: 27px;
+        height: 27px;
+        padding: 0;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        background: var(--red);
+        border: 2px solid #fff;
+        line-height: 1;
+        font-size: 16px;
+      }
+      .return-entry {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 10px;
+        align-items: end;
+        margin: 12px 0;
+      }
+      .return-entry label {
+        display: grid;
+        gap: 5px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--green2);
+      }
+      .return-entry input[type="range"] {
+        padding: 0;
       }
       #stampPreview {
         position: absolute;
@@ -560,8 +638,15 @@
         #stampModal {
           padding: 6px;
         }
-        #stampModal .card {
+        #returnModal {
+          padding: 6px;
+        }
+        #stampModal .card,
+        #returnModal .card {
           padding: 14px;
+        }
+        .return-entry {
+          grid-template-columns: 1fr;
         }
         .pdf-wrap {
           padding: 5px;
@@ -601,7 +686,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.5.5</span>
+          <span class="version">v5.6.0</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -768,7 +853,12 @@
       <div class="card">
         <h2 id="uploadTitle">上傳檔案</h2>
         <form id="uploadForm" method="post" target="uploadFrame">
-          <input type="hidden" name="action" value="upload" /><input
+          <input
+            type="hidden"
+            name="action"
+            id="uploadAction"
+            value="upload"
+          /><input
             type="hidden"
             name="authToken"
             id="uploadToken"
@@ -796,6 +886,10 @@
             type="hidden"
             name="requestId"
             id="uploadRequestId"
+          /><input
+            type="hidden"
+            name="returnNotes"
+            id="uploadReturnNotes"
           /><input id="filePicker" type="file" required />
           <label id="skipWrap" class="checkline hidden"
             ><input id="skipPreApproval" type="checkbox" />
@@ -894,6 +988,68 @@
         </section>
       </div>
     </div>
+    <div id="returnModal" class="modal hidden">
+      <div class="card">
+        <div class="eyebrow">PDF REVISION RETURN</div>
+        <h2 id="returnTitle">修改註記並退件</h2>
+        <p class="stamp-note">
+          輸入修改文字後，直接點文件中要修改的位置；可以跨頁加入多則註記，也能拖曳調整位置。
+          送出後會另存退件註記版，並退回申請人重新從第一關送審。
+        </p>
+        <div class="return-entry">
+          <label
+            >修改文字
+            <textarea
+              id="returnText"
+              maxlength="500"
+              placeholder="例如：請補上預算來源與執行日期"
+            ></textarea>
+          </label>
+          <label
+            >文字大小
+            <input
+              id="returnFontSize"
+              type="range"
+              min="13"
+              max="28"
+              step="1"
+              value="17"
+            />
+          </label>
+        </div>
+        <p class="field-note">
+          輸入文字後點PDF放置註記；每一則註記右上角的 × 可以刪除。
+        </p>
+        <p id="returnMsg" class="msg"></p>
+        <section id="returnWorkspace" class="hidden">
+          <div class="stamp-tools">
+            <button type="button" class="ghost" onclick="changeReturnPage(-1)">
+              上一頁</button
+            ><strong id="returnPageLabel"></strong
+            ><button type="button" class="ghost" onclick="changeReturnPage(1)">
+              下一頁
+            </button>
+          </div>
+          <div class="pdf-wrap">
+            <div id="returnPdfStage" class="pdf-stage">
+              <canvas id="returnPdfCanvas"></canvas>
+            </div>
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              id="confirmReturn"
+              class="danger"
+              onclick="confirmReturnCase()"
+            >
+              儲存註記並退回第一關</button
+            ><button type="button" class="ghost" onclick="closeReturn()">
+              取消
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
     <div id="editModal" class="modal hidden">
       <div class="card">
         <h2>編輯案件</h2>
@@ -915,7 +1071,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbzyte_RQY_a7AcUkcwXJ52czzkOfwRKprFNs0uop9n5D0HI9Zim_BVIH3xc6lV5CMonGg/exec",
-        FRONT_VERSION = "5.5.5",
+        FRONT_VERSION = "5.6.0",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
@@ -936,6 +1092,18 @@
         sourceLabel: "",
         renderTask: null,
       },
+        returnState = {
+          fileName: "",
+          bytes: null,
+          pdf: null,
+          page: 1,
+          pages: 0,
+          caseId: "",
+          type: "",
+          label: "",
+          notes: [],
+          renderTask: null,
+        },
         pendingUploadRequest = null;
       const savedStampSize = Number(localStorage.getItem("workStampSize"));
       if (savedStampSize >= 45 && savedStampSize <= 230) {
@@ -1181,8 +1349,10 @@
       }
       function render() {
         const unread = data.cases.filter(caseUnread).length,
-          pending = data.cases.filter((c) =>
-            String(c.status).includes("_pending_"),
+          pending = data.cases.filter(
+            (c) =>
+              String(c.status).includes("_pending_") ||
+              String(c.status).endsWith("_returned"),
           ).length,
           active = data.cases.filter((c) => c.status === "approved").length,
           closed = data.cases.filter((c) => c.status === "closed").length;
@@ -1260,6 +1430,12 @@
               c.applicationSupervisorStamp,
               stageSkipped(c, "application", "supervisor"),
             ],
+            [
+              "申請｜最新退件註記版",
+              c.applicationReturn,
+              "",
+              c.applicationReturnBy,
+            ],
             ["結案｜原始版", c.closure, "closure", c.closureUploader],
             [
               "結案｜副組長核定版",
@@ -1285,29 +1461,66 @@
               c.closureSupervisorStamp,
               stageSkipped(c, "closure", "supervisor"),
             ],
+            [
+              "結案｜最新退件註記版",
+              c.closureReturn,
+              "",
+              c.closureReturnBy,
+            ],
           ]
             .map((x) => fileRow(c, ...x))
             .join("");
-        let up = "";
-        if (c.status === "draft" && (isOwner || isAdmin))
-          up = uploadBtn(c, "application", "上傳申請書");
+        let up = "",
+          returnAction = "";
+        if (
+          ["draft", "application_returned"].includes(c.status) &&
+          (isOwner || isAdmin)
+        )
+          up = uploadBtn(
+            c,
+            "application",
+            c.status === "application_returned"
+              ? "修改後重新送出申請書"
+              : "上傳申請書",
+          );
         const target = pendingRole(c.status);
         if (
           String(c.status).startsWith("application_pending_") &&
           (data.user.role === target || isAdmin)
-        )
+        ) {
           up = uploadBtn(
             c,
             "application_" + target,
             roleName(target) + "審核申請",
           );
-        if (c.status === "approved" && (isOwner || isAdmin))
-          up = uploadBtn(c, "closure", "上傳結案報告");
+          returnAction = returnBtn(
+            c,
+            "application_" + target,
+            "修改註記並退件",
+          );
+        }
+        if (
+          ["approved", "closure_returned"].includes(c.status) &&
+          (isOwner || isAdmin)
+        )
+          up = uploadBtn(
+            c,
+            "closure",
+            c.status === "closure_returned"
+              ? "修改後重新送出結案報告"
+              : "上傳結案報告",
+          );
         if (
           String(c.status).startsWith("closure_pending_") &&
           (data.user.role === target || isAdmin)
-        )
+        ) {
           up = uploadBtn(c, "closure_" + target, roleName(target) + "審核結案");
+          returnAction = returnBtn(
+            c,
+            "closure_" + target,
+            "修改註記並退件",
+          );
+        }
         const adminLabel = isAdmin
             ? '<div class="admin-label">管理員操作</div>'
             : "",
@@ -1319,11 +1532,17 @@
             ? `<button class="danger" onclick="event.stopPropagation();deleteCase('${c.id}')">刪除案件</button>`
             : "";
         const statusClass = String(c.status).includes("_pending_")
-          ? "pending"
-          : c.status === "closed"
-            ? "closed"
+            ? "pending"
+            : String(c.status).endsWith("_returned")
+              ? "returned"
+              : c.status === "closed"
+                ? "closed"
+                : "",
+          returnPhase = c.status === "application_returned" ? "application" : c.status === "closure_returned" ? "closure" : "",
+          returnInfo = returnPhase
+            ? `<div class="return-info"><strong>退件人：</strong>${esc(c[returnPhase + "ReturnByName"] || c[returnPhase + "ReturnBy"] || "未記錄")}｜${esc(c[returnPhase + "ReturnAt"] || "")}<br><strong>修改摘要：</strong>${esc(c[returnPhase + "ReturnNotes"] || "請下載退件註記版查看")}</div>`
             : "";
-        return `<article class="card case ${unread ? "unread" : ""}" onclick="readCase('${c.id}')">${unread ? '<span class="dot"></span>' : ""}<h3><span class="badge">${esc(c.year)}年度</span> ${esc(c.title)}</h3><div class="meta">${c.id}｜申請人：<strong>${esc(c.applicantName || "未設定姓名")}</strong>（${roleName(c.applicantRole)}）<br>申請時間：${esc(c.eventDate || c.createdAt || "—")}</div><div class="status ${statusClass}">${statusName(c.status)}</div><div class="files">${files}</div><div class="actions">${adminLabel}${up}${edit}${del}</div></article>`;
+        return `<article class="card case ${unread ? "unread" : ""}" onclick="readCase('${c.id}')">${unread ? '<span class="dot"></span>' : ""}<h3><span class="badge">${esc(c.year)}年度</span> ${esc(c.title)}</h3><div class="meta">${c.id}｜申請人：<strong>${esc(c.applicantName || "未設定姓名")}</strong>（${roleName(c.applicantRole)}）<br>申請時間：${esc(c.eventDate || c.createdAt || "—")}</div><div class="status ${statusClass}">${statusName(c.status)}</div>${returnInfo}<div class="files">${files}</div><div class="actions">${adminLabel}${up}${returnAction}${edit}${del}</div></article>`;
       }
       function fileRow(
         c,
@@ -1336,10 +1555,12 @@
       ) {
         if (!url && skipped)
           return `<div class="file-row"><span>${label}</span><span class="missing">流程略過</span></div>`;
+        if (!url && label.includes("退件註記版")) return "";
         if (!url)
           return `<div class="file-row"><span>${label}</span><span class="missing">尚未上傳</span></div>`;
         const replace =
-          data.user.role === "admin" || data.user.email === uploader;
+          Boolean(type) &&
+          (data.user.role === "admin" || data.user.email === uploader);
         const mark = stamp
           ? `<small class="${stamp === "已核章" ? "status" : "missing"}">${stamp}</small> `
           : "";
@@ -1347,6 +1568,9 @@
       }
       function uploadBtn(c, t, label) {
         return `<button class="primary" onclick="event.stopPropagation();openUpload('${c.id}','${t}','${label}')">${label}</button>`;
+      }
+      function returnBtn(c, t, label) {
+        return `<button class="danger" onclick="event.stopPropagation();openReturn('${c.id}','${t}','${label}')">${label}</button>`;
       }
       async function createCase(e) {
         e.preventDefault();
@@ -1391,7 +1615,7 @@
           canSkip =
             ["social", "deputy"].includes(data.user.role) &&
             ["application", "closure"].includes(t) &&
-            !caseFileUrl(id, t) &&
+            (!caseFileUrl(id, t) || c.status === t + "_returned") &&
             c.applicantRole === data.user.role;
         document.getElementById("skipText").textContent =
           c.applicantRole === "deputy"
@@ -1403,9 +1627,11 @@
         document.getElementById("skipPreApproval").checked = false;
       }
       function prepareUploadFields(id, t) {
+        document.getElementById("uploadAction").value = "upload";
         document.getElementById("uploadCase").value = id;
         document.getElementById("uploadType").value = t;
         document.getElementById("uploadToken").value = token;
+        document.getElementById("uploadReturnNotes").value = "";
       }
       function closeUpload() {
         document.getElementById("uploadModal").classList.add("hidden");
@@ -1471,7 +1697,7 @@
           } catch (x) {}
         }
       }
-      function sendUploadRequest() {
+      function sendUploadRequest(fieldOverride = "") {
         if (pendingUploadRequest)
           return Promise.reject(new Error("上一個檔案仍在傳送中"));
         const encoded = document.getElementById("uploadData").value,
@@ -1498,8 +1724,11 @@
           form = document.getElementById("uploadForm"),
           caseId = document.getElementById("uploadCase").value,
           fileType = document.getElementById("uploadType").value,
-          field = caseFileField(fileType),
-          oldUrl = caseFileUrl(caseId, fileType);
+          field = fieldOverride || caseFileField(fileType),
+          oldCase = data.cases.find((item) => item.id === caseId) || {},
+          oldUrl = fieldOverride
+            ? oldCase[fieldOverride] || ""
+            : caseFileUrl(caseId, fileType);
         document.getElementById("uploadRequestId").value = requestId;
         return new Promise((resolve, reject) => {
           const timer = setTimeout(() => {
@@ -1606,7 +1835,7 @@
           canSkip =
             original &&
             ["social", "deputy"].includes(data.user.role) &&
-            !caseFileUrl(id, t) &&
+            (!caseFileUrl(id, t) || c.status === t + "_returned") &&
             c.applicantRole === data.user.role;
         stampState = {
           file: null,
@@ -1949,6 +2178,380 @@
           btn.disabled = false;
         }
       }
+      async function openReturn(id, t, label) {
+        if (!isReviewType(t))
+          return alert("只有審核階段可以使用修改退件");
+        returnState = {
+          fileName: "",
+          bytes: null,
+          pdf: null,
+          page: 1,
+          pages: 0,
+          caseId: id,
+          type: t,
+          label,
+          notes: [],
+          renderTask: null,
+        };
+        document.getElementById("returnTitle").textContent =
+          label + "｜修改註記並退件";
+        document.getElementById("returnText").value = "";
+        document.getElementById("returnWorkspace").classList.add("hidden");
+        document.getElementById("confirmReturn").disabled = false;
+        document.getElementById("returnModal").classList.remove("hidden");
+        setMsg("returnMsg", "正在載入目前待審文件…");
+        try {
+          if (!window.pdfjsLib || !window.PDFLib)
+            throw new Error("PDF元件尚未載入，請重新整理後再試");
+          const r = await api("getPreviousFile", {
+              caseId: id,
+              fileType: t,
+            }),
+            isPdf =
+              r.mimeType === "application/pdf" || /\.pdf$/i.test(r.fileName);
+          if (!isPdf)
+            throw new Error(
+              "目前文件不是PDF，無法在指定位置加入文字；請先轉成PDF再進行修改退件",
+            );
+          const f = base64ToFile(r.fileData, r.fileName, r.mimeType);
+          if (f.size > MAX_FILE_BYTES)
+            throw new Error("目前PDF超過20MB，無法線上註記");
+          returnState.fileName = f.name;
+          returnState.bytes = await f.arrayBuffer();
+          returnState.pdf = await pdfjsLib.getDocument({
+            data: new Uint8Array(returnState.bytes.slice(0)),
+          }).promise;
+          returnState.pages = returnState.pdf.numPages;
+          returnState.page = 1;
+          document
+            .getElementById("returnWorkspace")
+            .classList.remove("hidden");
+          await renderReturnPage();
+          setMsg(
+            "returnMsg",
+            `已載入${r.sourceLabel || "待審PDF"}；請輸入修改文字，再點文件放置註記。`,
+          );
+        } catch (x) {
+          setMsg("returnMsg", x.message, true);
+        }
+      }
+      function closeReturn() {
+        document.getElementById("returnModal").classList.add("hidden");
+        document.getElementById("returnWorkspace").classList.add("hidden");
+        document.getElementById("returnText").value = "";
+        setMsg("returnMsg", "");
+        if (returnState.pdf && returnState.pdf.destroy)
+          try {
+            returnState.pdf.destroy();
+          } catch (x) {}
+        returnState = {
+          fileName: "",
+          bytes: null,
+          pdf: null,
+          page: 1,
+          pages: 0,
+          caseId: "",
+          type: "",
+          label: "",
+          notes: [],
+          renderTask: null,
+        };
+      }
+      async function renderReturnPage() {
+        if (!returnState.pdf) return;
+        const page = await returnState.pdf.getPage(returnState.page),
+          base = page.getViewport({ scale: 1 }),
+          scale = Math.min(1.45, 850 / base.width),
+          view = page.getViewport({ scale }),
+          canvas = document.getElementById("returnPdfCanvas"),
+          ctx = canvas.getContext("2d");
+        canvas.width = Math.floor(view.width);
+        canvas.height = Math.floor(view.height);
+        if (returnState.renderTask)
+          try {
+            returnState.renderTask.cancel();
+          } catch (x) {}
+        returnState.renderTask = page.render({
+          canvasContext: ctx,
+          viewport: view,
+        });
+        await returnState.renderTask.promise;
+        document.getElementById("returnPageLabel").textContent =
+          `第 ${returnState.page} 頁／共 ${returnState.pages} 頁`;
+        requestAnimationFrame(renderReturnNotes);
+      }
+      function changeReturnPage(d) {
+        if (!returnState.pdf) return;
+        const page = Math.max(
+          1,
+          Math.min(returnState.pages, returnState.page + d),
+        );
+        if (page !== returnState.page) {
+          returnState.page = page;
+          renderReturnPage();
+        }
+      }
+      function wrapReturnText(ctx, text, maxWidth) {
+        const lines = [];
+        String(text || "")
+          .split(/\r?\n/)
+          .forEach((paragraph) => {
+            if (!paragraph) {
+              lines.push("");
+              return;
+            }
+            let line = "";
+            Array.from(paragraph).forEach((char) => {
+              const candidate = line + char;
+              if (line && ctx.measureText(candidate).width > maxWidth) {
+                lines.push(line);
+                line = char;
+              } else line = candidate;
+            });
+            if (line) lines.push(line);
+          });
+        return lines.length ? lines : [""];
+      }
+      function makeReturnNoteCanvas(text, cssWidth, fontSize) {
+        const ratio = 2,
+          width = Math.max(150, Math.round(cssWidth)),
+          size = Math.max(11, Math.round(fontSize)),
+          probe = document.createElement("canvas"),
+          probeCtx = probe.getContext("2d"),
+          padding = Math.max(9, Math.round(size * 0.65)),
+          lineHeight = Math.round(size * 1.48);
+        probeCtx.font =
+          `700 ${size}px -apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif`;
+        const lines = wrapReturnText(probeCtx, text, width - padding * 2),
+          height = Math.max(44, padding * 2 + lineHeight * lines.length),
+          canvas = document.createElement("canvas"),
+          ctx = canvas.getContext("2d");
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.fillStyle = "rgba(255,253,242,.94)";
+        ctx.fillRect(1, 1, width - 2, height - 2);
+        ctx.strokeStyle = "#bc3d35";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(2, 2, width - 4, height - 4);
+        ctx.fillStyle = "#8f2824";
+        ctx.font =
+          `700 ${size}px -apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        lines.forEach((line, index) =>
+          ctx.fillText(line, padding, padding + index * lineHeight),
+        );
+        return { canvas, width, height };
+      }
+      function renderReturnNotes() {
+        const stage = document.getElementById("returnPdfStage");
+        stage
+          .querySelectorAll(".return-note")
+          .forEach((element) => element.remove());
+        if (!stage.clientWidth || !stage.clientHeight) return;
+        returnState.notes
+          .filter((note) => note.page === returnState.page)
+          .forEach((note) => {
+            const width = note.w * stage.clientWidth,
+              fontSize = note.fontRatio * stage.clientWidth,
+              preview = makeReturnNoteCanvas(note.text, width, fontSize),
+              box = document.createElement("div"),
+              remove = document.createElement("button");
+            note.h = preview.height / stage.clientHeight;
+            note.x = Math.max(0, Math.min(note.x, 1 - note.w));
+            note.y = Math.max(0, Math.min(note.y, 1 - note.h));
+            box.className = "return-note";
+            box.dataset.noteId = note.id;
+            box.style.left = note.x * stage.clientWidth + "px";
+            box.style.top = note.y * stage.clientHeight + "px";
+            box.style.width = width + "px";
+            box.appendChild(preview.canvas);
+            remove.type = "button";
+            remove.className = "return-note-delete";
+            remove.textContent = "×";
+            remove.title = "刪除這則註記";
+            remove.addEventListener("click", (event) => {
+              event.stopPropagation();
+              returnState.notes = returnState.notes.filter(
+                (item) => item.id !== note.id,
+              );
+              renderReturnNotes();
+              setMsg(
+                "returnMsg",
+                `目前共有 ${returnState.notes.length} 則修改註記。`,
+              );
+            });
+            box.appendChild(remove);
+            enableReturnNoteDrag(box, note);
+            stage.appendChild(box);
+          });
+      }
+      function enableReturnNoteDrag(box, note) {
+        let drag = null;
+        box.addEventListener("click", (event) => event.stopPropagation());
+        box.addEventListener("pointerdown", (event) => {
+          if (event.target.closest("button")) return;
+          event.preventDefault();
+          event.stopPropagation();
+          drag = {
+            x: event.clientX,
+            y: event.clientY,
+            left: box.offsetLeft,
+            top: box.offsetTop,
+          };
+          box.setPointerCapture(event.pointerId);
+        });
+        box.addEventListener("pointermove", (event) => {
+          if (!drag) return;
+          const stage = document.getElementById("returnPdfStage"),
+            left = Math.max(
+              0,
+              Math.min(
+                drag.left + event.clientX - drag.x,
+                stage.clientWidth - box.offsetWidth,
+              ),
+            ),
+            top = Math.max(
+              0,
+              Math.min(
+                drag.top + event.clientY - drag.y,
+                stage.clientHeight - box.offsetHeight,
+              ),
+            );
+          box.style.left = left + "px";
+          box.style.top = top + "px";
+          note.x = left / stage.clientWidth;
+          note.y = top / stage.clientHeight;
+        });
+        const stop = () => (drag = null);
+        box.addEventListener("pointerup", stop);
+        box.addEventListener("pointercancel", stop);
+      }
+      document
+        .getElementById("returnPdfStage")
+        .addEventListener("click", (event) => {
+          if (!returnState.pdf || event.target.closest(".return-note")) return;
+          const text = String(
+            document.getElementById("returnText").value || "",
+          ).trim();
+          if (!text)
+            return setMsg(
+              "returnMsg",
+              "請先輸入修改文字，再點文件中的位置",
+              true,
+            );
+          const stage = document.getElementById("returnPdfStage"),
+            rect = stage.getBoundingClientRect(),
+            width = Math.min(300, Math.max(170, stage.clientWidth * 0.58)),
+            fontSize = Number(
+              document.getElementById("returnFontSize").value,
+            ),
+            preview = makeReturnNoteCanvas(text, width, fontSize),
+            x = Math.max(
+              0,
+              Math.min(
+                event.clientX - rect.left - width / 2,
+                stage.clientWidth - width,
+              ),
+            ),
+            y = Math.max(
+              0,
+              Math.min(
+                event.clientY - rect.top - preview.height / 2,
+                stage.clientHeight - preview.height,
+              ),
+            );
+          returnState.notes.push({
+            id:
+              "note_" +
+              Date.now().toString(36) +
+              "_" +
+              Math.random().toString(36).slice(2),
+            page: returnState.page,
+            text,
+            x: x / stage.clientWidth,
+            y: y / stage.clientHeight,
+            w: width / stage.clientWidth,
+            h: preview.height / stage.clientHeight,
+            fontRatio: fontSize / stage.clientWidth,
+          });
+          document.getElementById("returnText").value = "";
+          renderReturnNotes();
+          setMsg(
+            "returnMsg",
+            `已加入第 ${returnState.notes.length} 則註記；可繼續輸入下一則。`,
+          );
+        });
+      function returnFileField(type) {
+        return String(type).startsWith("application_")
+          ? "applicationReturn"
+          : "closureReturn";
+      }
+      async function confirmReturnCase() {
+        if (!returnState.pdf || !returnState.bytes)
+          return setMsg("returnMsg", "尚未載入待審PDF", true);
+        if (!returnState.notes.length)
+          return setMsg("returnMsg", "請至少在PDF上加入一則修改註記", true);
+        const button = document.getElementById("confirmReturn");
+        button.disabled = true;
+        setMsg("returnMsg", "正在製作退件註記PDF…");
+        try {
+          const pdf = await PDFLib.PDFDocument.load(
+              returnState.bytes.slice(0),
+            ),
+            pages = pdf.getPages();
+          for (const note of returnState.notes) {
+            const page = pages[note.page - 1];
+            if (!page) continue;
+            const pageWidth = page.getWidth(),
+              pageHeight = page.getHeight(),
+              basisWidth = 1000,
+              preview = makeReturnNoteCanvas(
+                note.text,
+                Math.max(150, basisWidth * note.w),
+                Math.max(11, basisWidth * note.fontRatio),
+              ),
+              image = await pdf.embedPng(preview.canvas.toDataURL("image/png")),
+              width = note.w * pageWidth,
+              height =
+                width * (preview.canvas.height / preview.canvas.width),
+              x = note.x * pageWidth,
+              y = Math.max(0, pageHeight - note.y * pageHeight - height);
+            page.drawImage(image, { x, y, width, height });
+          }
+          const out = await pdf.save({ useObjectStreams: true });
+          if (out.length > MAX_FILE_BYTES)
+            throw new Error("加入註記後PDF超過20MB，請先壓縮原始PDF");
+          const summary = returnState.notes
+              .map((note) => `第${note.page}頁：${note.text}`)
+              .join("\n")
+              .slice(0, 3000),
+            baseName = returnState.fileName.replace(/\.pdf$/i, "");
+          prepareUploadFields(returnState.caseId, returnState.type);
+          document.getElementById("uploadAction").value = "returnCase";
+          document.getElementById("uploadName").value =
+            baseName + "_退件註記.pdf";
+          document.getElementById("uploadMime").value = "application/pdf";
+          document.getElementById("uploadData").value = await base64(
+            new Blob([out], { type: "application/pdf" }),
+          );
+          document.getElementById("uploadReturnNotes").value = summary;
+          document.getElementById("uploadStampName").value = "";
+          document.getElementById("uploadStampDate").value = "";
+          document.getElementById("uploadStampPage").value = "";
+          document.getElementById("uploadStamped").value = "";
+          document.getElementById("uploadSkipPreApproval").value = "";
+          setMsg("returnMsg", "退件註記PDF已送出，正在等待後台確認…");
+          await sendUploadRequest(returnFileField(returnState.type));
+          data = await api("dashboard");
+          closeReturn();
+          render();
+        } catch (x) {
+          setMsg("returnMsg", x.message, true);
+          button.disabled = false;
+        }
+      }
       function openEdit(id) {
         const c = data.cases.find((x) => x.id === id);
         document.getElementById("editCaseId").value = id;
@@ -2167,11 +2770,13 @@
             application_pending_deputy: "申請待副組長審核",
             application_pending_director: "申請待院長審核",
             application_pending_supervisor: "申請待督導審核",
+            application_returned: "申請已退回修改",
             approved: "執行中",
             closure_pending: "結案待督導審核",
             closure_pending_deputy: "結案待副組長審核",
             closure_pending_director: "結案待院長審核",
             closure_pending_supervisor: "結案待督導審核",
+            closure_returned: "結案已退回修改",
             closed: "已結案",
           }[s] || s
         );
