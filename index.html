@@ -686,7 +686,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.6.1</span>
+          <span class="version">v5.6.2</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -1071,11 +1071,15 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbzyte_RQY_a7AcUkcwXJ52czzkOfwRKprFNs0uop9n5D0HI9Zim_BVIH3xc6lV5CMonGg/exec",
-        FRONT_VERSION = "5.6.1",
+        FRONT_VERSION = "5.6.2",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
+      const PENDING_UPLOAD_KEY = "workPendingUploadV1",
+        PENDING_UPLOAD_RECOVERY_MS = 3 * 60 * 1000;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
-        data = { user: {}, cases: [], users: [] };
+        data = { user: {}, cases: [], users: [] },
+        recoveringUpload = false,
+        recoveryTimer = null;
       if (window.pdfjsLib)
         pdfjsLib.GlobalWorkerOptions.workerSrc =
           "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
@@ -1231,6 +1235,69 @@
         if (google.accounts.id.disableAutoSelect)
           google.accounts.id.disableAutoSelect();
       }
+      function runWhenVisible(callback) {
+        let active = true;
+        const onVisible = () => {
+          if (!active || document.hidden) return;
+          active = false;
+          document.removeEventListener("visibilitychange", onVisible);
+          callback();
+        };
+        if (document.hidden)
+          document.addEventListener("visibilitychange", onVisible);
+        else onVisible();
+        return {
+          cancel() {
+            active = false;
+            document.removeEventListener("visibilitychange", onVisible);
+          },
+        };
+      }
+      function visibleTimeout(callback, delay) {
+        let active = true,
+          remaining = Math.max(0, Number(delay) || 0),
+          startedAt = 0,
+          timeoutId = 0;
+        const stopClock = () => {
+            if (!timeoutId) return;
+            clearTimeout(timeoutId);
+            timeoutId = 0;
+            remaining = Math.max(0, remaining - (Date.now() - startedAt));
+          },
+          cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = 0;
+            document.removeEventListener("visibilitychange", onVisibility);
+          },
+          fire = () => {
+            if (!active) return;
+            active = false;
+            cleanup();
+            callback();
+          },
+          startClock = () => {
+            if (!active || timeoutId || document.hidden) return;
+            if (remaining <= 0) return fire();
+            startedAt = Date.now();
+            timeoutId = setTimeout(fire, remaining);
+          },
+          onVisibility = () => {
+            if (document.hidden) stopClock();
+            else startClock();
+          };
+        document.addEventListener("visibilitychange", onVisibility);
+        startClock();
+        return {
+          cancel() {
+            if (!active) return;
+            active = false;
+            cleanup();
+          },
+        };
+      }
+      function visibleDelay(delay) {
+        return new Promise((resolve) => visibleTimeout(resolve, delay));
+      }
       function api(action, p = {}) {
         return new Promise((ok, no) => {
           const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6),
@@ -1247,9 +1314,11 @@
               });
           let finished = false,
             fallbackStarted = false,
-            timer = 0;
+            timer = null,
+            resumeTask = null;
           const cleanup = () => {
-              clearTimeout(timer);
+              if (timer) timer.cancel();
+              if (resumeTask) resumeTask.cancel();
               delete window[cb];
               s.remove();
             },
@@ -1274,10 +1343,18 @@
             },
             startFetchFallback = () => {
               if (finished || fallbackStarted) return;
+              if (document.hidden) {
+                if (!resumeTask)
+                  resumeTask = runWhenVisible(() => {
+                    resumeTask = null;
+                    startFetchFallback();
+                  });
+                return;
+              }
               fallbackStarted = true;
               s.remove();
-              clearTimeout(timer);
-              timer = setTimeout(
+              if (timer) timer.cancel();
+              timer = visibleTimeout(
                 () =>
                   fail(
                     "這台裝置無法連接 Google 後台，請點下方按鈕直接測試",
@@ -1297,17 +1374,29 @@
                   return response.text();
                 })
                 .then((text) => finish(parseJsonp(text)))
-                .catch(() =>
+                .catch(() => {
+                  if (finished) return;
+                  if (document.hidden) {
+                    fallbackStarted = false;
+                    if (timer) timer.cancel();
+                    timer = null;
+                    if (!resumeTask)
+                      resumeTask = runWhenVisible(() => {
+                        resumeTask = null;
+                        startFetchFallback();
+                      });
+                    return;
+                  }
                   fail(
                     "這台裝置無法連接 Google 後台，請點下方按鈕直接測試",
-                  ),
-                );
+                  );
+                });
             };
           window[cb] = finish;
           s.onerror = startFetchFallback;
           s.async = true;
           s.src = url;
-          timer = setTimeout(startFetchFallback, 15000);
+          timer = visibleTimeout(startFetchFallback, 15000);
           document.body.appendChild(s);
         });
       }
@@ -1337,6 +1426,7 @@
             drive.classList.remove("hidden");
           }
           render();
+          recoverStoredUpload();
         } catch (e) {
           if (auto || String(e.message).includes("登入")) {
             localStorage.removeItem("workAuthToken");
@@ -1653,10 +1743,36 @@
         document.getElementById("skipWrap").classList.add("hidden");
         setMsg("uploadMsg", "");
       }
+      function readStoredUpload() {
+        try {
+          return JSON.parse(localStorage.getItem(PENDING_UPLOAD_KEY) || "null");
+        } catch (x) {
+          localStorage.removeItem(PENDING_UPLOAD_KEY);
+          return null;
+        }
+      }
+      function rememberPendingUpload(pending) {
+        localStorage.setItem(
+          PENDING_UPLOAD_KEY,
+          JSON.stringify({
+            requestId: pending.requestId,
+            caseId: pending.caseId,
+            field: pending.field,
+            oldUrl: pending.oldUrl || "",
+            startedAt: Date.now(),
+          }),
+        );
+      }
+      function forgetPendingUpload(requestId = "") {
+        const saved = readStoredUpload();
+        if (!saved || !requestId || saved.requestId === requestId)
+          localStorage.removeItem(PENDING_UPLOAD_KEY);
+      }
       function settleUpload(requestId, response, error) {
         const pending = pendingUploadRequest;
         if (!pending || pending.requestId !== requestId) return;
-        clearTimeout(pending.timer);
+        if (pending.timer) pending.timer.cancel();
+        forgetPendingUpload(requestId);
         pendingUploadRequest = null;
         if (error) pending.reject(error);
         else if (response && response.ok) pending.resolve(response);
@@ -1667,14 +1783,12 @@
             ),
           );
       }
-      async function monitorUpload(requestId) {
-        while (
-          pendingUploadRequest &&
-          pendingUploadRequest.requestId === requestId
-        ) {
-          await new Promise((resolve) => setTimeout(resolve, 2500));
-          const pending = pendingUploadRequest;
-          if (!pending || pending.requestId !== requestId) return;
+      async function checkPendingUpload(requestId, checkDashboard = false) {
+        const pending = pendingUploadRequest;
+        if (!pending || pending.requestId !== requestId) return true;
+        if (pending.checking) return null;
+        pending.checking = true;
+        try {
           try {
             const status = await api("uploadStatus", { requestId });
             if (status.done) {
@@ -1685,16 +1799,15 @@
                   error: "後台找不到這次上傳的處理結果",
                 },
               );
-              return;
+              return true;
             }
           } catch (x) {
             if (/登入|授權|停用/.test(String(x.message || ""))) {
               settleUpload(requestId, null, x);
-              return;
+              return true;
             }
           }
-          if (Date.now() >= pending.nextDashboardCheck) {
-            pending.nextDashboardCheck = Date.now() + 10000;
+          if (checkDashboard) {
             try {
               const latest = await api("dashboard"),
                 c = latest.cases.find((item) => item.id === pending.caseId),
@@ -1705,10 +1818,106 @@
                   ok: true,
                   message: "已從案件資料確認檔案上傳完成",
                 });
-                return;
+                return true;
               }
             } catch (x) {}
           }
+          return false;
+        } finally {
+          const current = pendingUploadRequest;
+          if (current && current.requestId === requestId)
+            current.checking = false;
+        }
+      }
+      async function verifyUploadAtTimeout(requestId) {
+        const checked = await checkPendingUpload(requestId, true);
+        const pending = pendingUploadRequest;
+        if (!pending || pending.requestId !== requestId || checked === true)
+          return;
+        if (checked === null) {
+          pending.timer = visibleTimeout(
+            () => verifyUploadAtTimeout(requestId),
+            3000,
+          );
+          return;
+        }
+        settleUpload(
+          requestId,
+          null,
+          new Error(
+            "已等待90秒並再次查詢後台，但仍找不到新檔案。若剛才曾關閉或重新整理頁面，請重新選擇檔案上傳。",
+          ),
+        );
+      }
+      async function monitorUpload(requestId) {
+        while (
+          pendingUploadRequest &&
+          pendingUploadRequest.requestId === requestId
+        ) {
+          await visibleDelay(2500);
+          const pending = pendingUploadRequest;
+          if (!pending || pending.requestId !== requestId) return;
+          const checkDashboard = Date.now() >= pending.nextDashboardCheck;
+          if (checkDashboard)
+            pending.nextDashboardCheck = Date.now() + 10000;
+          const done = await checkPendingUpload(requestId, checkDashboard);
+          if (done === true) return;
+        }
+      }
+      async function recoverStoredUpload() {
+        if (!token || pendingUploadRequest || recoveringUpload) return;
+        const saved = readStoredUpload();
+        if (!saved || !saved.requestId || !saved.caseId || !saved.field) return;
+        recoveringUpload = true;
+        let rescheduled = false;
+        try {
+          let status = null;
+          try {
+            status = await api("uploadStatus", {
+              requestId: saved.requestId,
+            });
+          } catch (x) {
+            if (/登入|授權|停用|無權/.test(String(x.message || ""))) throw x;
+          }
+          if (status && status.done) {
+            forgetPendingUpload(saved.requestId);
+            if (!status.result || !status.result.ok)
+              throw new Error(
+                (status.result && status.result.error) || "前一筆上傳沒有成功",
+              );
+            data = await api("dashboard");
+            render();
+            alert("剛才離開頁面前的檔案已經上傳完成。");
+            return;
+          }
+          const c = data.cases.find((item) => item.id === saved.caseId),
+            newUrl = c && c[saved.field];
+          if (newUrl && (!saved.oldUrl || newUrl !== saved.oldUrl)) {
+            forgetPendingUpload(saved.requestId);
+            render();
+            alert("剛才離開頁面前的檔案已經上傳完成。");
+            return;
+          }
+          if (Date.now() - Number(saved.startedAt || 0) >= PENDING_UPLOAD_RECOVERY_MS) {
+            forgetPendingUpload(saved.requestId);
+            alert(
+              "前一筆上傳可能因頁面被關閉或重新整理而中斷，後台仍找不到新檔案；請重新選擇檔案上傳。",
+            );
+            return;
+          }
+          document.getElementById("summary").textContent =
+            "正在確認離開頁面前的上傳結果…";
+          rescheduled = true;
+          recoveryTimer = visibleTimeout(() => {
+            recoveringUpload = false;
+            recoveryTimer = null;
+            recoverStoredUpload();
+          }, 5000);
+        } catch (x) {
+          forgetPendingUpload(saved.requestId);
+          alert("前一筆上傳確認失敗：" + x.message);
+        } finally {
+          if (!rescheduled) recoveringUpload = false;
         }
       }
       function sendUploadRequest(fieldOverride = "") {
@@ -1745,15 +1954,10 @@
             : caseFileUrl(caseId, fileType);
         document.getElementById("uploadRequestId").value = requestId;
         return new Promise((resolve, reject) => {
-          const timer = setTimeout(() => {
-            settleUpload(
-              requestId,
-              null,
-              new Error(
-                "後台在90秒內沒有回覆，且案件資料仍沒有新檔案。請查看這次doPost執行記錄",
-              ),
-            );
-          }, 90000);
+          const timer = visibleTimeout(
+            () => verifyUploadAtTimeout(requestId),
+            90000,
+          );
           pendingUploadRequest = {
             requestId,
             resolve,
@@ -1763,7 +1967,9 @@
             field,
             oldUrl,
             nextDashboardCheck: Date.now() + 15000,
+            checking: false,
           };
+          rememberPendingUpload(pendingUploadRequest);
           try {
             form.submit();
             monitorUpload(requestId);
@@ -2641,6 +2847,21 @@
           return;
         settleUpload(pending.requestId, response);
       });
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) return;
+        const pending = pendingUploadRequest;
+        if (pending)
+          checkPendingUpload(pending.requestId, true).catch(() => {});
+        else recoverStoredUpload();
+      });
+      window.addEventListener("pageshow", () => {
+        if (token) recoverStoredUpload();
+      });
+      window.addEventListener("beforeunload", (e) => {
+        if (!pendingUploadRequest) return;
+        e.preventDefault();
+        e.returnValue = "";
+      });
       async function saveUser(e) {
         e.preventDefault();
         try {
@@ -2738,6 +2959,10 @@
         );
       }
       async function logout() {
+        if (pendingUploadRequest) {
+          alert("檔案仍在上傳中，請等待完成後再登出。");
+          return;
+        }
         const old = token;
         localStorage.removeItem("workAuthToken");
         token = "";
