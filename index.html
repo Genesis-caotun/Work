@@ -686,7 +686,7 @@
       <div class="head">
         <div class="brand">
           創世基金會草屯院｜工作申請與結案管理平台
-          <span class="version">v5.6.0</span>
+          <span class="version">v5.6.1</span>
         </div>
         <div id="who" class="userbox">尚未登入</div>
       </div>
@@ -1071,7 +1071,7 @@
           "512179941950-aagmp8o4h65jqp7q1c5390ad98029mcj.apps.googleusercontent.com",
         API =
           "https://script.google.com/macros/s/AKfycbzyte_RQY_a7AcUkcwXJ52czzkOfwRKprFNs0uop9n5D0HI9Zim_BVIH3xc6lV5CMonGg/exec",
-        FRONT_VERSION = "5.6.0",
+        FRONT_VERSION = "5.6.1",
         MAX_FILE_BYTES = 20 * 1024 * 1024;
       let token = localStorage.getItem("workAuthToken") || "",
         registrationIdToken = "",
@@ -1589,10 +1589,21 @@
         }
       }
       async function readCase(id) {
+        const c = data.cases.find((item) => item.id === id);
+        if (!c || !caseUnread(c)) return;
+        const owner = data.user.email === c.applicantEmail,
+          oldStaffUnread = c.staffUnread,
+          oldManagerUnread = c.managerUnread;
+        if (owner) c.staffUnread = false;
+        else c.managerUnread = false;
+        render();
         try {
-          data = await api("markRead", { caseId: id });
+          await api("markRead", { caseId: id });
+        } catch (e) {
+          c.staffUnread = oldStaffUnread;
+          c.managerUnread = oldManagerUnread;
           render();
-        } catch (e) {}
+        }
       }
       function isReviewType(t) {
         return /_(deputy|director|supervisor)$/.test(String(t || ""));
@@ -1661,7 +1672,7 @@
           pendingUploadRequest &&
           pendingUploadRequest.requestId === requestId
         ) {
-          await new Promise((resolve) => setTimeout(resolve, 1800));
+          await new Promise((resolve) => setTimeout(resolve, 2500));
           const pending = pendingUploadRequest;
           if (!pending || pending.requestId !== requestId) return;
           try {
@@ -1682,19 +1693,22 @@
               return;
             }
           }
-          try {
-            const latest = await api("dashboard"),
-              c = latest.cases.find((item) => item.id === pending.caseId),
-              newUrl = c && c[pending.field];
-            if (newUrl && (!pending.oldUrl || newUrl !== pending.oldUrl)) {
-              data = latest;
-              settleUpload(requestId, {
-                ok: true,
-                message: "已從案件資料確認檔案上傳完成",
-              });
-              return;
-            }
-          } catch (x) {}
+          if (Date.now() >= pending.nextDashboardCheck) {
+            pending.nextDashboardCheck = Date.now() + 10000;
+            try {
+              const latest = await api("dashboard"),
+                c = latest.cases.find((item) => item.id === pending.caseId),
+                newUrl = c && c[pending.field];
+              if (newUrl && (!pending.oldUrl || newUrl !== pending.oldUrl)) {
+                data = latest;
+                settleUpload(requestId, {
+                  ok: true,
+                  message: "已從案件資料確認檔案上傳完成",
+                });
+                return;
+              }
+            } catch (x) {}
+          }
         }
       }
       function sendUploadRequest(fieldOverride = "") {
@@ -1748,6 +1762,7 @@
             caseId,
             field,
             oldUrl,
+            nextDashboardCheck: Date.now() + 15000,
           };
           try {
             form.submit();
