@@ -1,0 +1,214 @@
+const ADMIN_EMAIL='hty0814ex@gmail.com';
+const APP_URL='https://genesis-caotun.github.io/Work/';
+const APP_ORIGIN='https://genesis-caotun.github.io';
+const APP_VERSION='5.6.3';
+const MAX_FILE_BYTES=20*1024*1024;
+const ROOT_FOLDER_NAME='工作申請與結案管理平台_專用資料夾';
+const USER_CACHE_KEY='ACTIVE_USER_DIRECTORY_V1';
+const USER_CACHE_SECONDS=60;
+const CASE_CACHE_KEY='CASE_DIRECTORY_V1';
+const CASE_CACHE_SECONDS=20;
+const FOLDER_SHARED_PREFIX='CASE_FOLDER_SHARED_';
+const BACKGROUND_TRIGGER_KEY='BACKGROUND_TRIGGER_V563';
+let SPREADSHEET_RUNTIME_CACHE=null;
+
+function doGet(e){
+  const p=(e&&e.parameter)||{}, cb=String(p.callback||'callback');
+  if(!/^[a-zA-Z_$][\w$\.]*$/.test(cb))return ContentService.createTextOutput('invalid callback');
+  let r;try{
+    if(p.action==='login')r=login_(p.idToken);
+    else if(p.action==='register')r=register_(p.idToken,p);
+    else if(p.action==='logout')r=logout_(p.authToken);
+    else if(p.action==='dashboard')r=dashboard_(p.authToken);
+    else if(p.action==='uploadStatus')r=uploadStatus_(p.authToken,p.requestId);
+    else if(p.action==='getPreviousFile')r=getPreviousFile_(p.authToken,p.caseId,p.fileType);
+    else if(p.action==='saveUser')r=saveUser_(p.authToken,p);
+    else if(p.action==='deleteUser')r=deleteUser_(p.authToken,p.email);
+    else if(p.action==='createCase')r=createCase_(p.authToken,p);
+    else if(p.action==='markRead')r=markRead_(p.authToken,p.caseId);
+    else if(p.action==='editCase')r=editCase_(p.authToken,p);
+    else if(p.action==='deleteCase')r=deleteCase_(p.authToken,p.caseId);
+    else r={ok:true,message:'Work Approval API',version:APP_VERSION};
+  }catch(x){r={ok:false,error:x.message||String(x)}}
+  return ContentService.createTextOutput(cb+'('+JSON.stringify(r)+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+function doPost(e){
+  const p=(e&&e.parameter)||{},requestId=String(p.requestId||'');
+  let effectiveUser='',activeUser='';try{effectiveUser=Session.getEffectiveUser().getEmail()}catch(x){}try{activeUser=Session.getActiveUser().getEmail()}catch(x){}
+  console.log('UPLOAD_REQUEST ['+requestId+'] effectiveUser='+effectiveUser+' activeUser='+activeUser+' case='+String(p.caseId||'')+' type='+String(p.fileType||'')+' file='+String(p.fileName||'')+' contentLength='+String((e&&e.contentLength)||0)+' base64Chars='+String((p.fileData||'').length));
+  let r;try{
+    if(p.action==='upload')r=upload_(p.authToken,p);
+    else if(p.action==='returnCase')r=returnCase_(p.authToken,p);
+    else throw new Error('不支援的操作');
+  }catch(x){
+    r={ok:false,error:x.message||String(x)};
+    console.error('UPLOAD_ERROR ['+requestId+'] '+r.error);
+  }
+  if(/^[a-zA-Z0-9_-]{10,120}$/.test(requestId)){
+    try{CacheService.getScriptCache().put('UPLOAD_'+requestId,JSON.stringify({tokenHash:hash_(p.authToken||''),result:r}),600)}
+    catch(x){console.log('upload status: '+x.message)}
+  }
+  const json=JSON.stringify(Object.assign({},r,{requestId:requestId})).replace(/</g,'\\u003c');
+  return HtmlService.createHtmlOutput('<script>parent.postMessage('+json+',"'+APP_ORIGIN+'");</script>')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function uploadStatus_(token,requestId){
+  requireUser_(token);
+  const id=String(requestId||'');
+  if(!/^[a-zA-Z0-9_-]{10,120}$/.test(id))throw new Error('上傳查詢碼不正確');
+  const raw=CacheService.getScriptCache().get('UPLOAD_'+id);
+  if(!raw)return{ok:true,done:false};
+  const saved=JSON.parse(raw);
+  if(saved.tokenHash!==hash_(token))throw new Error('無權查詢這次上傳');
+  return{ok:true,done:true,result:saved.result||{ok:false,error:'找不到上傳結果'}};
+}
+
+function setupSystem(){
+  const props=PropertiesService.getScriptProperties();let id=props.getProperty('SPREADSHEET_ID');
+  const ss=id?SpreadsheetApp.openById(id):SpreadsheetApp.create('工作申請與結案管理平台－後台資料');props.setProperty('SPREADSHEET_ID',ss.getId());
+  ensure_(ss,'白名單',['Email','姓名','權限','狀態','建立時間','最後修改時間','修改者']);
+  const userSheet=ss.getSheetByName('白名單');if(userSheet.getLastRow()>1){const roles=userSheet.getRange(2,3,userSheet.getLastRow()-1,1).getValues();roles.forEach((r,i)=>{if(String(r[0]).toLowerCase()==='staff')userSheet.getRange(i+2,3).setValue('social');if(String(r[0]).toLowerCase()==='manager')userSheet.getRange(i+2,3).setValue('supervisor')})}
+  const caseHeaders=['案件編號','案件名稱','申請時間','申請人Email','申請人姓名','狀態','Drive資料夾ID','申請書','督導申請核定版','結案報告','督導結案核定版','建立時間','更新時間','申請人未讀','審核者未讀','申請書上傳者','督導申請上傳者','結案上傳者','督導結案上傳者','年度','申請人職位','副組長申請核定版','院長申請核定版','副組長結案核定版','院長結案核定版','副組長申請上傳者','院長申請上傳者','副組長結案上傳者','院長結案上傳者','副組長申請核章狀態','院長申請核章狀態','督導申請核章狀態','副組長結案核章狀態','院長結案核章狀態','督導結案核章狀態','申請略過前置審核','結案略過前置審核','申請退件註記版','結案退件註記版','申請退件人','結案退件人','申請退件時間','結案退件時間','申請退件說明','結案退件說明'];
+  let caseSheet=ss.getSheetByName('案件');if(!caseSheet)caseSheet=ss.insertSheet('案件');if(caseSheet.getMaxColumns()<45)caseSheet.insertColumnsAfter(caseSheet.getMaxColumns(),45-caseSheet.getMaxColumns());caseSheet.getRange(1,1,1,45).setValues([caseHeaders]);caseSheet.setFrozenRows(1);
+  if(caseSheet.getLastRow()>1){const old=caseSheet.getRange(2,1,caseSheet.getLastRow()-1,45).getValues();old.forEach((r,i)=>{const row=i+2;if(r[7]&&!r[15])caseSheet.getRange(row,16).setValue(r[3]);if(r[9]&&!r[17])caseSheet.getRange(row,18).setValue(r[3]);if(!r[20]){const owner=getUser_(r[3]);caseSheet.getRange(row,21).setValue(owner&&owner.role!=='admin'?owner.role:'social')}if(r[5]==='application_pending')caseSheet.getRange(row,6).setValue('application_pending_supervisor');if(r[5]==='closure_pending')caseSheet.getRange(row,6).setValue('closure_pending_supervisor')})}
+  ensure_(ss,'登入工作階段',['Token雜湊','Email','到期時間','建立時間']);
+  ensure_(ss,'操作紀錄',['時間','操作者','動作','對象','內容']);
+  ensure_(ss,'核章紀錄',['時間','案件編號','文件類型','核章人Email','核章人姓名','PDF頁碼','檔案網址']);
+  ensure_(ss,'退件紀錄',['時間','案件編號','文件階段','退件人Email','退件人姓名','退件人職位','註記摘要','退件註記版網址']);
+  ensure_(ss,'通知佇列',['建立時間','收件人','主旨','內容','狀態','傳送時間','錯誤','重試次數']);
+  ensureBackgroundTrigger_();
+  clearUserCache_();clearCaseCache_();const oldAdmin=getUser_(ADMIN_EMAIL);upsertUser_(ADMIN_EMAIL,oldAdmin&&oldAdmin.name?oldAdmin.name:'Timothy Hsu','admin','active',ADMIN_EMAIL);
+  const root=ensureRootFolder_();
+  syncAllDrivePermissions_();
+  return {spreadsheet:ss.getUrl(),folder:root.getUrl(),version:APP_VERSION};
+}
+function checkDrivePermission(){
+  const root=ensureRootFolder_(),name='權限測試_'+Utilities.formatDate(new Date(),'Asia/Taipei','yyyyMMdd_HHmmss')+'.txt';
+  let file;
+  try{
+    file=root.createFile(Utilities.newBlob('Google Drive 寫入權限測試','text/plain',name));
+    const result={ok:true,message:'Drive 寫入權限正常',effectiveUser:Session.getEffectiveUser().getEmail(),folder:root.getUrl()};
+    console.log(JSON.stringify(result));
+    return result;
+  }catch(x){
+    const result={ok:false,message:'Drive 寫入權限失敗：'+(x.message||String(x)),effectiveUser:Session.getEffectiveUser().getEmail()};
+    console.log(JSON.stringify(result));
+    throw new Error(result.message);
+  }finally{
+    if(file)try{file.setTrashed(true)}catch(x){console.log('清除權限測試檔失敗：'+x.message)}
+  }
+}
+function ensure_(ss,n,h){let s=ss.getSheetByName(n);if(!s)s=ss.insertSheet(n);if(s.getLastRow()===0)s.appendRow(h);s.setFrozenRows(1)}
+
+function dashboard_(token){const started=Date.now(),u=requireUser_(token),authMs=Date.now()-started,users=listUsers_(),usersMs=Date.now()-started-authMs,nameMap={};users.forEach(x=>nameMap[x.email]=x.name);const cases=listCases_().map(c=>Object.assign({},c,{applicantName:nameMap[c.applicantEmail]||c.applicantName||'未設定姓名',applicationReturnByName:nameMap[c.applicationReturnBy]||c.applicationReturnByName||'',closureReturnByName:nameMap[c.closureReturnBy]||c.closureReturnByName||''})),rootFolderUrl=u.role==='admin'?rootFolderUrl_():'';console.log('PERF_DASHBOARD auth='+authMs+'ms users='+usersMs+'ms cases='+(Date.now()-started-authMs-usersMs)+'ms total='+(Date.now()-started)+'ms count='+cases.length);return{ok:true,user:u,users:u.role==='admin'?users:[],cases:cases,rootFolderUrl:rootFolderUrl,version:APP_VERSION}}
+function login_(idToken){const i=verify_(idToken),u=getUser_(i.email);if(!u)return{ok:true,registrationRequired:true,email:i.email,version:APP_VERSION};if(u.status==='pending')return{ok:true,registrationPending:true,email:u.email,name:u.name,role:u.role,version:APP_VERSION};if(u.status!=='active')throw new Error('這個帳號已停用，請聯絡管理員');const raw=Utilities.getUuid()+Utilities.getUuid(),now=new Date(),expires=new Date(now.getTime()+30*24*60*60*1000),h=hash_(raw);PropertiesService.getScriptProperties().setProperty('SESSION_'+h,JSON.stringify({email:u.email,expires:expires.getTime()}));try{const s=sheet_('登入工作階段');cleanSessions_();s.appendRow([h,u.email,expires,now])}catch(x){console.log(x.message)}return{ok:true,authToken:raw,expiresAt:expires.toISOString(),user:u,version:APP_VERSION}}
+function register_(idToken,p){const i=verify_(idToken),email=i.email,name=String(p.name||'').trim(),role=String(p.role||'').trim().toLowerCase();if(!name||name.length>30)throw new Error('請輸入正確姓名');if(!['social','deputy','director','supervisor'].includes(role))throw new Error('請選擇正確職種');const lock=LockService.getScriptLock();if(!lock.tryLock(10000))throw new Error('系統忙碌中，請稍後再試');try{const old=getUser_(email);if(old&&old.status==='active')return{ok:true,alreadyActive:true,message:'帳號已經啟用，請返回登入'};if(old&&old.status==='disabled')throw new Error('這個帳號已停用，請聯絡管理員');const isNew=!old;upsertUser_(email,name,role,'pending',email);log_(email,isNew?'申請註冊':'更新註冊資料',email,name+'｜'+roleLabel_(role));if(isNew)queueMail_(ADMIN_EMAIL,'【新帳號待審核】'+name,name+'（'+email+'）申請註冊為「'+roleLabel_(role)+'」。\n請登入管理專區確認並啟用：\n'+APP_URL);return{ok:true,registrationPending:true,email:email,name:name,role:role,message:'註冊資料已送出，請等待管理員啟用'}}finally{lock.releaseLock()}}
+function logout_(token){if(token)PropertiesService.getScriptProperties().deleteProperty('SESSION_'+hash_(token));return{ok:true}}
+function createCase_(token,p){
+  const u=requireUser_(token);if(!['social','deputy','director','supervisor','admin'].includes(u.role))throw new Error('目前職位無法建立申請');
+  if(!String(u.name||'').trim())throw new Error('白名單尚未設定你的姓名，請先請管理員補上姓名');
+  const title=String(p.title||'').trim(),year=normalizeYear_(p.year),date=new Date();if(!title)throw new Error('請輸入案件名稱');
+  const id=nextCaseId_(),yearFolder=ensureYearFolder_(year),folder=yearFolder.createFolder(id+'_'+safeName_(title));
+  const values=new Array(45).fill('');values[0]=id;values[1]=title;values[2]=date;values[3]=u.email;values[4]=u.name;values[5]='draft';values[6]=folder.getId();values[11]=date;values[12]=date;values[14]='1';values[19]=year;values[20]=u.role==='admin'?'social':u.role;sheet_('案件').appendRow(values);
+  clearCaseCache_();shareCaseFolderToActiveUsers_(folder);
+  log_(u.email,'建立案件',id,title+'｜申請人職位：'+roleLabel_(values[20]));
+  return dashboard_(token);
+}
+function upload_(token,p){
+  const perfStart=Date.now(),u=requireUser_(token),row=findCaseRow_(p.caseId),authMs=Date.now()-perfStart;if(!row)throw new Error('找不到案件');const c=row.caseData,type=String(p.fileType||''),cfg=uploadConfig_(type);if(!cfg)throw new Error('不支援的文件階段');
+  console.log('UPLOAD_USER case='+c.id+' user='+u.email+' role='+u.role+' applicant='+c.applicantEmail+' applicantRole='+c.applicantRole+' status='+c.status+' oldFile='+(c[cfg.field]?'yes':'no')+' oldUploader='+(c[cfg.uploaderField]||'none'));
+  const permission=checkUploadPermission_(u,c,type),isOrigin=cfg.stage==='origin',stamped=String(p.stamped||'')==='1',skip=!permission.replacing&&isOrigin&&['social','deputy'].includes(c.applicantRole)&&String(p.skipPreApproval||'')==='1',stampName=String(p.stampName||'').replace(/\s/g,''),stampPage=Number(p.stampPage||0);if(stamped){if(isOrigin&&!['social','deputy'].includes(u.role))throw new Error('只有社資或副組長可以在原始文件使用線上核章');if(String(p.mimeType||'')!=='application/pdf'||!/\.pdf$/i.test(String(p.fileName||'')))throw new Error('只有PDF可以自動核章');if(!validChineseStampName_(stampName)||stampName!==String(u.name||'').replace(/\s/g,''))throw new Error('核章姓名必須與白名單中的三字中文姓名一致');if(!Number.isInteger(stampPage)||stampPage<1)throw new Error('缺少核章頁碼')}
+  if(!String(p.fileData||''))throw new Error('後台沒有收到檔案內容，請確認檔案大小與網路後再試');
+  let bytes;try{bytes=Utilities.base64Decode(String(p.fileData))}catch(x){throw new Error('檔案資料解碼失敗：'+(x.message||String(x)))}if(!bytes.length)throw new Error('收到的檔案是空的');if(bytes.length>MAX_FILE_BYTES)throw new Error('檔案不可超過 20MB');const decodeMs=Date.now()-perfStart-authMs;
+  const oldUrl=c[cfg.field];
+  if(oldUrl){try{const old=DriveApp.getFileById(fileId_(oldUrl));old.setName('舊版_'+Utilities.formatDate(new Date(),'Asia/Taipei','yyyyMMdd_HHmmss')+'_'+old.getName())}catch(x){console.log(x.message)}}
+  let folder,file,shareMs=0;
+  try{folder=DriveApp.getFolderById(c.folderId);const shareStarted=Date.now();ensureCaseFolderShared_(folder);shareMs=Date.now()-shareStarted;file=folder.createFile(Utilities.newBlob(bytes,String(p.mimeType||'application/octet-stream'),String(p.fileName||'file')))}
+  catch(x){throw new Error('無法寫入案件的Google Drive資料夾。請確認網頁應用程式設為「以我的身分執行」，並重新授權Drive權限。原始錯誤：'+(x.message||String(x)))}
+  const driveMs=Date.now()-perfStart-authMs-decodeMs-shareMs;
+  const s=sheet_('案件'),now=new Date(),fileUrl=file.getUrl(),values=row.rawRow.slice();values[cfg.col-1]=fileUrl;values[cfg.uploaderCol-1]=u.email;if(cfg.stampCol)values[cfg.stampCol-1]=stamped?'已核章':'未核章';values[12]=now;let next='';
+  if(!permission.replacing){if(type==='application')values[35]=skip?'1':'';if(type==='closure')values[36]=skip?'1':'';next=nextStatus_(type,c.applicantRole,skip);values[5]=next;if(next.indexOf('_pending_')>0){values[14]='1';values[13]=''}else{values[13]='1';values[14]=''}}
+  s.getRange(row.row,1,1,45).setValues([values]);clearCaseCache_();if(stamped)sheet_('核章紀錄').appendRow([now,c.id,cfg.label,u.email,stampName,stampPage,fileUrl]);const sheetMs=Date.now()-perfStart-authMs-decodeMs-driveMs-shareMs;
+  if(!permission.replacing&&next){try{if(next.indexOf('_pending_')>0){const target=next.split('_pending_')[1];notifyRole_(target,'【待'+roleLabel_(target)+'審核】'+c.title,cfg.label+'已送出：'+c.id+'\n'+APP_URL)}else queueMail_(c.applicantEmail,'【審核流程完成】'+c.title,cfg.phase==='application'?'工作申請已完成核定：'+c.id+'\n'+APP_URL:'結案報告已完成核定：'+c.id+'\n'+APP_URL)}catch(x){console.error('UPLOAD_NOTIFY_ERROR ['+c.id+'] '+(x.message||String(x)))}}
+  const skipDetail=skip?(c.applicantRole==='social'?'｜已勾選略過副組長與院長':'｜已勾選略過院長'):'';const detail=file.getName()+'｜'+(stamped?'已核章：'+stampName+'｜'+rocDateText_()+'｜第'+stampPage+'頁':'未核章直接送出')+skipDetail;try{log_(u.email,(permission.replacing?'替換':permission.resubmitting?'重新送出':'上傳')+cfg.label,c.id,detail)}catch(x){console.error('UPLOAD_LOG_ERROR ['+c.id+'] '+(x.message||String(x)))}console.log('PERF_UPLOAD ['+c.id+'] auth='+authMs+'ms decode='+decodeMs+'ms drive='+driveMs+'ms share='+shareMs+'ms sheet='+sheetMs+'ms notifyLog='+(Date.now()-perfStart-authMs-decodeMs-driveMs-shareMs-sheetMs)+'ms total='+(Date.now()-perfStart)+'ms bytes='+bytes.length);return{ok:true,message:permission.resubmitting?'重新送出完成':'上傳完成'};
+}
+function returnCase_(token,p){
+  const u=requireUser_(token),row=findCaseRow_(p.caseId);if(!row)throw new Error('找不到案件');
+  const c=row.caseData,type=String(p.fileType||''),cfg=uploadConfig_(type);if(!cfg||cfg.stage==='origin')throw new Error('只有審核階段可以修改退件');
+  const expected=cfg.phase+'_pending_'+cfg.stage;if(c.status!==expected)throw new Error('案件狀態已變更，請重新整理後再試');
+  if(u.role!=='admin'&&u.role!==cfg.stage)throw new Error('只有目前輪到的'+roleLabel_(cfg.stage)+'可以退件');
+  if(!['deputy','director','supervisor','admin'].includes(u.role))throw new Error('你沒有修改退件權限');
+  if(String(p.mimeType||'')!=='application/pdf'||!/\.pdf$/i.test(String(p.fileName||'')))throw new Error('修改退件只支援PDF');
+  const notes=String(p.returnNotes||'').trim().slice(0,3000);if(!notes)throw new Error('請至少加入一則修改註記');
+  if(!String(p.fileData||''))throw new Error('後台沒有收到退件註記檔');
+  let bytes;try{bytes=Utilities.base64Decode(String(p.fileData))}catch(x){throw new Error('退件檔案解碼失敗：'+(x.message||String(x)))}if(!bytes.length)throw new Error('退件檔案是空的');if(bytes.length>MAX_FILE_BYTES)throw new Error('退件註記PDF不可超過20MB');
+  const rc=returnConfig_(cfg.phase),s=sheet_('案件'),oldUrl=c[rc.field];if(oldUrl){try{const old=DriveApp.getFileById(fileId_(oldUrl));old.setName('舊版_'+Utilities.formatDate(new Date(),'Asia/Taipei','yyyyMMdd_HHmmss')+'_'+old.getName())}catch(x){console.log(x.message)}}
+  let folder,file;try{folder=DriveApp.getFolderById(c.folderId);ensureCaseFolderShared_(folder);file=folder.createFile(Utilities.newBlob(bytes,'application/pdf',safeName_(String(p.fileName||'退件註記.pdf'))))}catch(x){throw new Error('無法儲存退件註記PDF：'+(x.message||String(x)))}
+  const values=archiveAndClearApprovals_(c,cfg.phase,row.rawRow.slice());
+  const now=new Date();values[rc.fileCol-1]=file.getUrl();values[rc.byCol-1]=u.email;values[rc.timeCol-1]=now;values[rc.notesCol-1]=notes;values[5]=cfg.phase+'_returned';values[12]=now;values[13]='1';values[14]='';s.getRange(row.row,1,1,45).setValues([values]);clearCaseCache_();
+  sheet_('退件紀錄').appendRow([now,c.id,cfg.phase,u.email,u.name,roleLabel_(u.role),notes,file.getUrl()]);
+  log_(u.email,'修改退件',c.id,roleLabel_(u.role)+'｜'+cfg.phase+'｜'+notes);
+  queueMail_(c.applicantEmail,'【文件退回修改】'+c.title,(u.name||u.email)+'（'+roleLabel_(u.role)+'）已將'+(cfg.phase==='application'?'工作申請':'結案報告')+'退回第一關。\n\n請登入平台下載「退件註記版」，依文件上的文字註記修改後重新送出。\n\n修改摘要：\n'+notes+'\n\n'+APP_URL);
+  return{ok:true,message:'已退回第一關'};
+}
+function returnConfig_(phase){return phase==='application'?{field:'applicationReturn',fileCol:38,byCol:40,timeCol:42,notesCol:44}:{field:'closureReturn',fileCol:39,byCol:41,timeCol:43,notesCol:45}}
+function archiveAndClearApprovals_(c,phase,values){const defs=phase==='application'?[['applicationDeputy',22],['applicationDirector',23],['applicationReview',9]]:[['closureDeputy',24],['closureDirector',25],['closureReview',11]],cols=phase==='application'?[22,23,9,26,27,17,30,31,32,36]:[24,25,11,28,29,19,33,34,35,37],stamp=Utilities.formatDate(new Date(),'Asia/Taipei','yyyyMMdd_HHmmss');defs.forEach(d=>{const url=c[d[0]];if(url)try{const f=DriveApp.getFileById(fileId_(url));f.setName('退件前舊版_'+stamp+'_'+f.getName())}catch(x){console.log(x.message)}});cols.forEach(col=>values[col-1]='');return values}
+function getPreviousFile_(token,id,type){
+  const u=requireUser_(token),row=findCaseRow_(id);if(!row)throw new Error('找不到案件');const c=row.caseData,cfg=uploadConfig_(String(type||''));if(!cfg||cfg.stage==='origin')throw new Error('這個階段沒有上一版檔案');checkUploadPermission_(u,c,String(type||''));const source=previousSource_(c,String(type||''));if(!source||!source.url)throw new Error('找不到可以沿用的上一版檔案');const file=DriveApp.getFileById(fileId_(source.url));if(file.getSize()>MAX_FILE_BYTES)throw new Error('上一版檔案超過20MB，請改用下載後重新上傳');return{ok:true,fileName:file.getName(),mimeType:file.getMimeType()||'application/octet-stream',fileData:Utilities.base64Encode(file.getBlob().getBytes()),sourceLabel:source.label};
+}
+function previousSource_(c,type){const map={application_deputy:[['application','申請原始版']],application_director:[['applicationDeputy','副組長申請核定版'],['application','申請原始版']],application_supervisor:[['applicationDirector','院長申請核定版'],['applicationDeputy','副組長申請核定版'],['application','申請原始版']],closure_deputy:[['closure','結案原始版']],closure_director:[['closureDeputy','副組長結案核定版'],['closure','結案原始版']],closure_supervisor:[['closureDirector','院長結案核定版'],['closureDeputy','副組長結案核定版'],['closure','結案原始版']]};const options=map[type]||[];for(let i=0;i<options.length;i++){const field=options[i][0];if(c[field])return{url:c[field],label:options[i][1]}}return null}
+function checkUploadPermission_(u,c,t){
+  const cfg=uploadConfig_(t);if(!cfg)throw new Error('不支援的文件階段');const own=c.applicantEmail===u.email,old=c[cfg.field],uploader=c[cfg.uploaderField];
+  if(cfg.stage==='origin'){if(!own&&u.role!=='admin')throw new Error('只有案件建立者可以上傳。目前登入：'+u.email+'；案件建立者：'+c.applicantEmail);const returned=c.status===cfg.phase+'_returned',initial=(t==='application'&&c.status==='draft')||(t==='closure'&&c.status==='approved');if(returned||initial)return{replacing:false,resubmitting:returned||Boolean(old)};if(old){if(u.role!=='admin'&&u.email!==uploader)throw new Error('這份檔案已存在，只有管理員或原上傳者可以替換。目前登入：'+u.email+'；原上傳者：'+(uploader||'未記錄'));return{replacing:true}}if(t==='application')throw new Error('案件已進入審核流程，目前狀態：'+c.status);throw new Error('案件尚未完成申請核定，目前狀態：'+c.status)}
+  if(old){if(u.role!=='admin'&&u.email!==uploader)throw new Error('這份檔案已存在，只有管理員或原上傳者可以替換。目前登入：'+u.email+'；原上傳者：'+(uploader||'未記錄'));return{replacing:true}}
+  const expected=cfg.phase+'_pending_'+cfg.stage;if(c.status!==expected)throw new Error('目前尚未輪到'+roleLabel_(cfg.stage)+'審核。目前狀態：'+c.status+'；預期狀態：'+expected);if(u.role!=='admin'&&u.role!==cfg.stage)throw new Error('只有'+roleLabel_(cfg.stage)+'可以審核。目前登入職位：'+roleLabel_(u.role));return{replacing:false}
+}
+function uploadConfig_(t){return{application:{field:'application',uploaderField:'applicationUploader',col:8,uploaderCol:16,stampCol:0,label:'申請原始版',phase:'application',stage:'origin'},application_deputy:{field:'applicationDeputy',uploaderField:'applicationDeputyUploader',col:22,uploaderCol:26,stampCol:30,label:'副組長申請核定版',phase:'application',stage:'deputy'},application_director:{field:'applicationDirector',uploaderField:'applicationDirectorUploader',col:23,uploaderCol:27,stampCol:31,label:'院長申請核定版',phase:'application',stage:'director'},application_supervisor:{field:'applicationReview',uploaderField:'applicationReviewUploader',col:9,uploaderCol:17,stampCol:32,label:'督導申請核定版',phase:'application',stage:'supervisor'},closure:{field:'closure',uploaderField:'closureUploader',col:10,uploaderCol:18,stampCol:0,label:'結案原始版',phase:'closure',stage:'origin'},closure_deputy:{field:'closureDeputy',uploaderField:'closureDeputyUploader',col:24,uploaderCol:28,stampCol:33,label:'副組長結案核定版',phase:'closure',stage:'deputy'},closure_director:{field:'closureDirector',uploaderField:'closureDirectorUploader',col:25,uploaderCol:29,stampCol:34,label:'院長結案核定版',phase:'closure',stage:'director'},closure_supervisor:{field:'closureReview',uploaderField:'closureReviewUploader',col:11,uploaderCol:19,stampCol:35,label:'督導結案核定版',phase:'closure',stage:'supervisor'}}[t]||null}
+function nextStatus_(type,ownerRole,skip){const cfg=uploadConfig_(type);if(cfg.stage==='origin'){if(ownerRole==='social')return cfg.phase+'_pending_'+(skip?'supervisor':'deputy');if(ownerRole==='deputy')return cfg.phase+'_pending_'+(skip?'supervisor':'director');if(ownerRole==='director')return cfg.phase+'_pending_supervisor';return cfg.phase==='application'?'approved':'closed'}if(cfg.stage==='deputy')return cfg.phase+'_pending_director';if(cfg.stage==='director')return cfg.phase+'_pending_supervisor';return cfg.phase==='application'?'approved':'closed'}
+function pendingRole_(status){const s=String(status||''),mark='_pending_';return s.indexOf(mark)>-1?s.split(mark)[1]:''}
+function markRead_(token,id){const u=requireUser_(token),r=findCaseRow_(id);if(r){if(u.email===r.caseData.applicantEmail)sheet_('案件').getRange(r.row,14).setValue('');else if(u.role==='admin'||u.role===pendingRole_(r.caseData.status))sheet_('案件').getRange(r.row,15).setValue('');clearCaseCache_()}return{ok:true}}
+
+function editCase_(token,p){const u=requireUser_(token),r=findCaseRow_(p.caseId);if(!r)throw new Error('找不到案件');if(u.role!=='admin'&&u.email!==r.caseData.applicantEmail)throw new Error('只有管理員或案件建立者可以修改');const title=String(p.title||'').trim();if(!title)throw new Error('案件名稱不可空白');const s=sheet_('案件');s.getRange(r.row,2).setValue(title);s.getRange(r.row,13).setValue(new Date());clearCaseCache_();log_(u.email,'修改案件',p.caseId,title);return dashboard_(token)}
+function deleteCase_(token,id){const u=requireUser_(token);if(u.role!=='admin')throw new Error('只有管理員可以刪除案件');const r=findCaseRow_(id);if(!r)throw new Error('找不到案件');DriveApp.getFolderById(r.caseData.folderId).setTrashed(true);sheet_('案件').deleteRow(r.row);PropertiesService.getScriptProperties().deleteProperty(FOLDER_SHARED_PREFIX+r.caseData.folderId);clearCaseCache_();log_(u.email,'刪除案件',id,'資料夾已移至垃圾桶');return dashboard_(token)}
+
+function requireUser_(token){if(!token)throw new Error('登入已逾時，請重新登入');const h=hash_(token),props=PropertiesService.getScriptProperties(),raw=props.getProperty('SESSION_'+h);let email='';if(raw){try{const s=JSON.parse(raw);if(Number(s.expires)>Date.now())email=s.email;else props.deleteProperty('SESSION_'+h)}catch(x){props.deleteProperty('SESSION_'+h)}}if(!email){try{const sh=sheet_('登入工作階段');if(sh&&sh.getLastRow()>=2){const rows=sh.getRange(2,1,sh.getLastRow()-1,4).getValues(),r=rows.find(x=>String(x[0])===h&&new Date(x[2]).getTime()>Date.now());if(r){email=r[1];props.setProperty('SESSION_'+h,JSON.stringify({email:email,expires:new Date(r[2]).getTime()}))}}}catch(x){console.log(x.message)}}if(!email)throw new Error('登入已逾時，請重新登入');const u=getUser_(email);if(!u||u.status!=='active')throw new Error('帳號未授權或已停用');return u}
+function verify_(t){if(!t)throw new Error('請先登入');const res=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+encodeURIComponent(t),{muteHttpExceptions:true}),d=JSON.parse(res.getContentText()||'{}');if(res.getResponseCode()!==200||d.aud!==prop_('GOOGLE_CLIENT_ID')||String(d.email_verified)!=='true')throw new Error('Google 登入驗證失敗');return{email:norm_(d.email)}}
+
+function saveUser_(token,p){const a=requireUser_(token);if(a.role!=='admin')throw new Error('你沒有管理員權限');const email=norm_(p.email),name=String(p.name||'').trim(),role=String(p.role).trim().toLowerCase(),status=String(p.status).trim().toLowerCase(),old=getUser_(email);if(!email.includes('@'))throw new Error('Email不正確');if(status==='active'&&!name)throw new Error('啟用帳號前必須填寫姓名');if(!['social','deputy','director','supervisor','admin'].includes(role)||!['active','disabled','pending'].includes(status))throw new Error('設定不正確');if(email===ADMIN_EMAIL&&(role!=='admin'||status!=='active'))throw new Error('初始管理員不能停用或降級');upsertUser_(email,name,role,status,a.email);if(status==='active'&&(!old||old.status!=='active'))syncUserFilePermissions_(email,true);else if(status!=='active'&&old&&old.status==='active')syncUserFilePermissions_(email,false);if(status!=='active')revokeUserSessions_(email);if(status==='active'&&(!old||old.status!=='active'))queueMail_(email,'【帳號已啟用】創世基金會草屯院工作平台','你的帳號已由管理員啟用，現在可以使用 Google 帳號登入：\n'+APP_URL);log_(a.email,status==='active'&&old&&old.status==='pending'?'核准註冊':'更新白名單',email,name+'｜'+roleLabel_(role)+'｜'+status);return dashboard_(token)}
+function deleteUser_(token,email){const a=requireUser_(token);if(a.role!=='admin')throw new Error('你沒有管理員權限');email=norm_(email);if(email===ADMIN_EMAIL)throw new Error('初始管理員不能刪除');const s=sheet_('白名單');if(s.getLastRow()<2)throw new Error('找不到帳號');const rows=s.getRange(2,1,s.getLastRow()-1,7).getValues(),i=rows.findIndex(r=>norm_(r[0])===email);if(i<0)throw new Error('找不到帳號');syncUserFilePermissions_(email,false);revokeUserSessions_(email);s.deleteRow(i+2);clearUserCache_();log_(a.email,'刪除白名單',email,'已撤銷登入及檔案權限');return dashboard_(token)}
+function listUsers_(){const cache=CacheService.getScriptCache();try{const hit=cache.get(USER_CACHE_KEY);if(hit)return JSON.parse(hit)}catch(x){console.log('user cache read: '+x.message)}const s=sheet_('白名單'),users=s.getLastRow()<2?[]:s.getRange(2,1,s.getLastRow()-1,7).getValues().map(r=>{let role=String(r[2]||'social').trim().toLowerCase();if(role==='staff')role='social';if(role==='manager')role='supervisor';return{email:norm_(r[0]),name:r[1]||'',role:role,status:String(r[3]||'disabled').trim().toLowerCase(),updatedAt:fmt_(r[5])}});try{cache.put(USER_CACHE_KEY,JSON.stringify(users),USER_CACHE_SECONDS)}catch(x){console.log('user cache write: '+x.message)}return users}
+function clearUserCache_(){try{CacheService.getScriptCache().remove(USER_CACHE_KEY)}catch(x){console.log('user cache clear: '+x.message)}}
+function getUser_(e){return listUsers_().find(u=>u.email===norm_(e))||null}
+function upsertUser_(e,n,r,st,ed){const s=sheet_('白名單'),rows=s.getLastRow()>1?s.getRange(2,1,s.getLastRow()-1,7).getValues():[],i=rows.findIndex(x=>norm_(x[0])===norm_(e)),now=new Date(),v=[norm_(e),n,r,st,i>=0?(rows[i][4]||now):now,now,ed];if(i>=0)s.getRange(i+2,1,1,7).setValues([v]);else s.appendRow(v);clearUserCache_()}
+
+function listCases_(){const cache=CacheService.getScriptCache();try{const hit=cache.get(CASE_CACHE_KEY);if(hit)return JSON.parse(hit)}catch(x){console.log('case cache read: '+x.message)}const s=sheet_('案件'),cases=s.getLastRow()<2?[]:s.getRange(2,1,s.getLastRow()-1,45).getValues().map(caseRow_).sort((a,b)=>b.updatedSort-a.updatedSort);try{cache.put(CASE_CACHE_KEY,JSON.stringify(cases),CASE_CACHE_SECONDS)}catch(x){console.log('case cache write: '+x.message)}return cases}
+function clearCaseCache_(){try{CacheService.getScriptCache().remove(CASE_CACHE_KEY)}catch(x){console.log('case cache clear: '+x.message)}}
+function caseRow_(r){return{id:r[0],title:r[1],eventDate:fmt_(r[2]),applicantEmail:norm_(r[3]),applicantName:r[4],status:r[5],folderId:r[6],application:r[7],applicationReview:r[8],closure:r[9],closureReview:r[10],createdAt:fmt_(r[11]),updatedAt:fmt_(r[12]),updatedSort:new Date(r[12]||0).getTime(),staffUnread:String(r[13])==='1',managerUnread:String(r[14])==='1',applicationUploader:norm_(r[15]),applicationReviewUploader:norm_(r[16]),closureUploader:norm_(r[17]),closureReviewUploader:norm_(r[18]),year:String(r[19]||rocYearFrom_(r[11])),applicantRole:String(r[20]||'social'),applicationDeputy:r[21],applicationDirector:r[22],closureDeputy:r[23],closureDirector:r[24],applicationDeputyUploader:norm_(r[25]),applicationDirectorUploader:norm_(r[26]),closureDeputyUploader:norm_(r[27]),closureDirectorUploader:norm_(r[28]),applicationDeputyStamp:r[29],applicationDirectorStamp:r[30],applicationSupervisorStamp:r[31],closureDeputyStamp:r[32],closureDirectorStamp:r[33],closureSupervisorStamp:r[34],skipApplication:String(r[35])==='1',skipClosure:String(r[36])==='1',applicationReturn:r[37],closureReturn:r[38],applicationReturnBy:norm_(r[39]),closureReturnBy:norm_(r[40]),applicationReturnAt:fmt_(r[41]),closureReturnAt:fmt_(r[42]),applicationReturnNotes:r[43]||'',closureReturnNotes:r[44]||''}}
+function findCaseRow_(id){const s=sheet_('案件'),last=s.getLastRow();if(last<2)return null;const hit=s.getRange(2,1,last-1,1).createTextFinder(String(id)).matchEntireCell(true).findNext();if(!hit)return null;const row=hit.getRow(),raw=s.getRange(row,1,1,45).getValues()[0];return{row:row,rawRow:raw.slice(),caseData:caseRow_(raw)}}
+function nextCaseId_(){const y=Utilities.formatDate(new Date(),'Asia/Taipei','yyyy'),n=listCases_().filter(c=>String(c.id).startsWith('CT-'+y)).length+1;return'CT-'+y+'-'+String(n).padStart(3,'0')}
+function notifyRole_(role,subject,body){queueMails_(listUsers_().filter(u=>u.role===role&&u.status==='active').map(u=>({to:u.email,subject:subject,body:body})))}function roleLabel_(r){return{social:'社資',deputy:'副組長',director:'院長',supervisor:'督導',admin:'管理員'}[r]||r}
+function ensureRootFolder_(){const props=PropertiesService.getScriptProperties();let f=null,id=props.getProperty('ROOT_FOLDER_ID');if(id){try{f=DriveApp.getFolderById(id);if(f.isTrashed())f=null}catch(x){f=null}}if(!f){f=DriveApp.createFolder(ROOT_FOLDER_NAME);props.setProperty('ROOT_FOLDER_ID',f.getId())}if(f.getName()!==ROOT_FOLDER_NAME)f.setName(ROOT_FOLDER_NAME);return f}
+function ensureYearFolder_(year){const root=ensureRootFolder_(),name=year+'年度',folders=root.getFoldersByName(name);while(folders.hasNext()){const f=folders.next();if(!f.isTrashed())return f}return root.createFolder(name)}
+function shareCaseFolderToActiveUsers_(folder){let complete=true;listUsers_().filter(u=>u.status==='active'&&u.email!==ADMIN_EMAIL).forEach(u=>{try{grantViewerSilently_(folder.getId(),u.email)}catch(x){complete=false;console.log('shareFolder: '+x.message)}});if(complete)PropertiesService.getScriptProperties().setProperty(FOLDER_SHARED_PREFIX+folder.getId(),String(Date.now()));return complete}
+function ensureCaseFolderShared_(folder){const props=PropertiesService.getScriptProperties();if(props.getProperty(FOLDER_SHARED_PREFIX+folder.getId()))return true;return shareCaseFolderToActiveUsers_(folder)}
+function allCaseFolderIds_(){return Array.from(new Set(listCases_().map(c=>String(c.folderId||'')).filter(Boolean)))}
+function allCaseFileIds_(){const ids=[];listCases_().forEach(c=>[c.application,c.applicationDeputy,c.applicationDirector,c.applicationReview,c.closure,c.closureDeputy,c.closureDirector,c.closureReview,c.applicationReturn,c.closureReturn].filter(Boolean).forEach(url=>{try{ids.push(fileId_(url))}catch(x){}}));return Array.from(new Set(ids))}
+function grantViewerSilently_(fileId,email){email=norm_(email);if(!email)return;const current=Drive.Permissions.list(fileId,{fields:'permissions(id,emailAddress,role,type)'}).permissions||[];if(current.some(p=>norm_(p.emailAddress)===email))return;Drive.Permissions.create({type:'user',role:'reader',emailAddress:email},fileId,{sendNotificationEmail:false,fields:'id'})}
+function syncUserFilePermissions_(email,active){try{ensureRootFolder_().removeViewer(email)}catch(x){}allCaseFolderIds_().forEach(id=>{try{const f=DriveApp.getFolderById(id);if(active)grantViewerSilently_(id,email);else f.removeViewer(email)}catch(x){console.log('folder permission: '+x.message)}});if(!active)allCaseFileIds_().forEach(id=>{try{DriveApp.getFileById(id).removeViewer(email)}catch(x){console.log('legacy file permission: '+x.message)}})}
+function syncAllDrivePermissions_(){const users=listUsers_();users.forEach(u=>syncUserFilePermissions_(u.email,u.status==='active'));try{ensureRootFolder_().removeViewer(ADMIN_EMAIL)}catch(x){}}
+function revokeUserSessions_(email){const props=PropertiesService.getScriptProperties(),all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('SESSION_')===0).forEach(k=>{try{if(norm_(JSON.parse(all[k]).email)===email)props.deleteProperty(k)}catch(x){}});try{const s=sheet_('登入工作階段');if(s.getLastRow()>1){for(let i=s.getLastRow();i>=2;i--)if(norm_(s.getRange(i,2).getValue())===email)s.deleteRow(i)}}catch(x){}}
+function cleanSessions_(){const props=PropertiesService.getScriptProperties(),last=Number(props.getProperty('LAST_SESSION_CLEANUP')||0);if(Date.now()-last<6*60*60*1000)return;const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;try{const s=sheet_('登入工作階段'),count=s.getLastRow()-1;if(count>0){const rows=s.getRange(2,1,count,4).getValues(),keep=rows.filter(r=>new Date(r[2]).getTime()>Date.now());if(keep.length!==rows.length){s.getRange(2,1,count,4).clearContent();if(keep.length)s.getRange(2,1,keep.length,4).setValues(keep)}}props.setProperty('LAST_SESSION_CLEANUP',String(Date.now()))}finally{lock.releaseLock()}}
+function hash_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8).map(b=>(b+256)%256).map(b=>('0'+b.toString(16)).slice(-2)).join('')}
+function fileId_(url){const m=String(url).match(/[-\w]{25,}/);if(!m)throw new Error('找不到舊檔案');return m[0]}
+function rootFolderUrl_(){const id=PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_ID');return id?'https://drive.google.com/drive/folders/'+id:ensureRootFolder_().getUrl()}
+function ensureNotificationQueue_(){let s=sheet_('通知佇列');if(!s){s=spreadsheet_().insertSheet('通知佇列');s.appendRow(['建立時間','收件人','主旨','內容','狀態','傳送時間','錯誤','重試次數']);s.setFrozenRows(1)}return s}
+function ensureBackgroundTrigger_(){const props=PropertiesService.getScriptProperties();if(props.getProperty(BACKGROUND_TRIGGER_KEY)==='1')return;const exists=ScriptApp.getProjectTriggers().some(t=>t.getHandlerFunction()==='processBackgroundTasks');if(!exists)ScriptApp.newTrigger('processBackgroundTasks').timeBased().everyMinutes(1).create();props.setProperty(BACKGROUND_TRIGGER_KEY,'1')}
+function queueMail_(to,subject,body){queueMails_([{to:to,subject:subject,body:body}])}
+function queueMails_(items){items=(items||[]).filter(x=>norm_(x.to));if(!items.length)return;ensureBackgroundTrigger_();const s=ensureNotificationQueue_(),now=new Date(),rows=items.map(x=>[now,norm_(x.to),String(x.subject||''),String(x.body||''),'待傳送','','',0]);s.getRange(s.getLastRow()+1,1,rows.length,8).setValues(rows)}
+function processMailQueue_(limit){const s=ensureNotificationQueue_(),count=s.getLastRow()-1;if(count<1)return 0;const rows=s.getRange(2,1,count,8).getValues(),quota=Math.max(0,MailApp.getRemainingDailyQuota()),max=Math.min(Number(limit)||20,quota);let sent=0,changed=false;for(let i=0;i<rows.length&&sent<max;i++){const r=rows[i],status=String(r[4]||''),tries=Number(r[7]||0);if(status!=='待傳送'||tries>=3)continue;try{MailApp.sendEmail(String(r[1]),String(r[2]),String(r[3]));r[4]='已傳送';r[5]=new Date();r[6]='';sent++}catch(x){r[7]=tries+1;r[6]=String(x.message||x).slice(0,500);r[4]=r[7]>=3?'失敗':'待傳送'}changed=true}if(changed)s.getRange(2,5,rows.length,4).setValues(rows.map(r=>[r[4],r[5],r[6],r[7]]));return sent}
+function processFolderPermissionMigration_(limit){const props=PropertiesService.getScriptProperties(),all=props.getProperties(),pending=listCases_().filter(c=>c.folderId&&!all[FOLDER_SHARED_PREFIX+c.folderId]),batch=pending.slice(0,Number(limit)||2);batch.forEach(c=>{try{shareCaseFolderToActiveUsers_(DriveApp.getFolderById(c.folderId))}catch(x){console.log('folder migration '+c.id+': '+x.message)}});return{processed:batch.length,remaining:Math.max(0,pending.length-batch.length)}}
+function processBackgroundTasks(){const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;try{const mails=processMailQueue_(20),folders=processFolderPermissionMigration_(2);console.log('BACKGROUND_TASK mails='+mails+' folders='+folders.processed+' remainingFolders='+folders.remaining)}finally{lock.releaseLock()}}
+function setupPerformanceV563(){ensureNotificationQueue_();PropertiesService.getScriptProperties().deleteProperty(BACKGROUND_TRIGGER_KEY);ensureBackgroundTrigger_();clearCaseCache_();const folders=processFolderPermissionMigration_(2);return{ok:true,message:'v5.6.3背景加速已啟用；其餘既有案件將每分鐘自動同步',folderMigration:folders,version:APP_VERSION}}
+function log_(a,x,t,d){sheet_('操作紀錄').appendRow([new Date(),a,x,t,d])}function spreadsheet_(){if(!SPREADSHEET_RUNTIME_CACHE)SPREADSHEET_RUNTIME_CACHE=SpreadsheetApp.openById(prop_('SPREADSHEET_ID'));return SPREADSHEET_RUNTIME_CACHE}function sheet_(n){return spreadsheet_().getSheetByName(n)}function prop_(n){const v=PropertiesService.getScriptProperties().getProperty(n);if(!v)throw new Error('缺少系統設定：'+n);return v}function norm_(v){return String(v||'').trim().toLowerCase()}function fmt_(v){return v?Utilities.formatDate(new Date(v),'Asia/Taipei','yyyy/MM/dd HH:mm'):''}function rocYearFrom_(v){const d=v?new Date(v):new Date();return d.getFullYear()-1911}function rocDateText_(){return'民國'+rocYearFrom_(new Date())+'年'+Utilities.formatDate(new Date(),'Asia/Taipei','M月d日')}function validChineseStampName_(v){return/^[\u3400-\u9fff]{3}$/.test(String(v||''))}function normalizeYear_(v){const y=String(v||rocYearFrom_(new Date())).trim();if(!/^\d{3,4}$/.test(y))throw new Error('年度請輸入3至4位數字，例如115');return y}function safeName_(v){return String(v).replace(/[\\/:*?"<>|]/g,'_').slice(0,60)}
